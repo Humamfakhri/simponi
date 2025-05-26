@@ -3,15 +3,20 @@
 
 import dynamic from "next/dynamic"
 import React from "react"
+import { SubArc, Tick } from "react-gauge-component";
 
 // Dynamically import the gauge component (no SSR)
 const GaugeComponent = dynamic(() => import("react-gauge-component"), { ssr: false })
 
 interface GaugeProps {
-  value: number
+  value: number | undefined;
+  ticks: Tick[];
+  minValue: number;
+  maxValue: number;
+  subArcs: SubArc[]
 }
 
-const Gauge: React.FC<GaugeProps> = ({ value }) => {
+const Gauge: React.FC<GaugeProps> = ({ value, ticks, minValue, maxValue, subArcs }: GaugeProps) => {
   return (
     // <div className="w-full h-auto">
     //   <GaugeComponent
@@ -112,45 +117,98 @@ const Gauge: React.FC<GaugeProps> = ({ value }) => {
     //   />
     // </div>
 
+    // <div className="w-full h-auto">
+    //   <GaugeComponent
+    //     value={value}
+    //     type="radial"
+    //     labels={{
+    //       valueLabel: {
+    //         formatTextValue: value => `${value}`,
+    //         style: { textShadow: "none", fill: "var(--primary)", fontWeight: "bold" },
+    //         // oklch(0.47 0 0)
+    //         // matchColorWithArc: true,
+    //         // hide: true
+    //       },
+    //       tickLabels: {
+    //         type: "inner",
+    //         ticks: [
+    //           { value: 20 },
+    //           { value: 40 },
+    //           { value: 60 },
+    //           { value: 80 },
+    //           { value: 100 }
+    //         ],
+    //         defaultTickValueConfig: {
+    //           formatTextValue: (value: number) => `${value}`,
+    //           // formatTextValue: (value: number) => value + 'PPM',
+    //           style: { fontSize: 10 }
+    //         }
+    //       }
+    //       //       tickLabels: {
+    //       //         type: 'outer',
+    //       //         defaultTickValueConfig: {
+    //       //           formatTextValue: (value: number) => `${value}`,
+    //       //           // formatTextValue: (value: number) => value + 'PPM',
+    //       //           style: { fontSize: 10 }
+    //       //         },
+    //     }}
+    //     arc={{
+    //       colorArray: [
+    //         'oklch(0.86 0.02 232.94)',
+    //         'oklch(0.8 0.12 234.07)',
+    //         'oklch(68.5% 0.169 237.323) ',
+    //         'oklch(0.8 0.12 234.07)',
+    //         'oklch(0.86 0.02 232.94)'
+    //       ],
+    //       subArcs: [{ limit: 10 }, { limit: 30 }, {}, {}, {}],
+    //       padding: 0.02,
+    //       width: 0.2
+    //     }}
+    //     pointer={{
+    //       type: "needle",
+    //       elastic: true,
+    //       animationDelay: 0,
+    //       length: 0.5,
+    //     }}
+    //   />
+    // </div>
+
     <div className="w-full h-auto">
       <GaugeComponent
-        value={50}
-        type="radial"
+        type="semicircle"
+        arc={{
+          colorArray: [
+            'oklch(0.86 0.02 232.94)',
+            // 'oklch(0.8 0.12 234.07)',
+            // 'oklch(68.5% 0.169 237.323) ',
+            'oklch(76.5% 0.177 163.223)',
+            // 'oklch(0.8 0.12 234.07)',
+            'oklch(0.86 0.02 232.94)'
+          ],
+          padding: 0.02,
+          subArcs: subArcs
+        }}
+        pointer={{ type: "blob", animationDelay: 0 }}
+        value={value}
+        minValue={minValue}
+        maxValue={maxValue}
         labels={{
           valueLabel: {
             formatTextValue: value => `${value}`,
-            style: { textShadow: "none", fill: "var(--primary)", fontWeight: "bold" },
+            style: { textShadow: "none", fill: "var(--primary)", fontWeight: "900", fontSize: 44 },
             // oklch(0.47 0 0)
-            matchColorWithArc: true,
+            // matchColorWithArc: true,
             // hide: true
           },
           tickLabels: {
             type: "inner",
-            ticks: [
-              { value: 20 },
-              { value: 40 },
-              { value: 60 },
-              { value: 80 },
-              { value: 100 }
-            ]
+            ticks: ticks,
+            defaultTickValueConfig: {
+              formatTextValue: (value: number) => `${value}`,
+              // formatTextValue: (value: number) => value + 'PPM',
+              style: { fontSize: 10 }
+            }
           }
-        }}
-        arc={{
-          colorArray: [
-            'oklch(0.86 0.02 232.94)',
-            'oklch(0.8 0.12 234.07)',
-            'oklch(68.5% 0.169 237.323) ',
-            'oklch(0.8 0.12 234.07)',
-            'oklch(0.86 0.02 232.94)'
-          ],
-          subArcs: [{ limit: 10 }, { limit: 30 }, {}, {}, {}],
-          padding: 0.02,
-          width: 0.2
-        }}
-        pointer={{
-          // type: "arrow",
-          elastic: true,
-          animationDelay: 0
         }}
       />
     </div>
