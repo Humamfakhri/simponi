@@ -7,7 +7,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import { removeFirebasePrefix } from "@/lib/utils";
-import { Leaf, Music2 } from 'lucide-react';
+// import { Leaf, Music2 } from 'lucide-react';
 import Image from "next/image";
 
 export default function LoginPage() {
