@@ -14,7 +14,7 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "SIMPONI | Masuk",
-  description: "Sistem Monitoring Indoor Hidroponik",
+  description: "Sistem Monitoring Hidroponik Indoor",
 };
 
 export default function LoginLayout({

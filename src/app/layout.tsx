@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "SIMPONI",
-  description: "Sistem Monitoring Indoor Hidroponik",
+  description: "Sistem Monitoring Hidroponik Indoor",
 };
 
 
