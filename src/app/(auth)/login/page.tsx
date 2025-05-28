@@ -67,7 +67,8 @@ export default function LoginPage() {
               e.preventDefault(); // mencegah reload halaman
               handleLogin(email, password);
             }}
-            className="text-center min-w-96 flex flex-col gap-4 glass-login bg-white/50 p-12 rounded-3xl z-10"
+            className="text-center flex flex-col gap-4 glass-login bg-white/50 px-4 py-8 lg:p-12 rounded-3xl z-10 w-full"
+            // className="text-center min-w-96 flex flex-col gap-4 glass-login bg-white/50 p-6 lg:p-12 mx-2 rounded-3xl z-10"
           >
             <div className="header text-center lg:mb-10">
               <div className="flex flex-col items-center justify-center mb-8">
@@ -78,7 +79,7 @@ export default function LoginPage() {
                   <Leaf strokeWidth={3} className='size-9 -ml-6' />
                   <span className="text-4xl font-black font-heading">SIMPONI</span>
                 </div> */}
-                <h1 className="font-black font-heading text-2xl mb-2">Selamat Datang di SIMPONI!</h1>
+                <h1 className="font-black font-heading text-xl lg:text-2xl mb-2">Selamat Datang di SIMPONI!</h1>
                 <p className="text-primary/80">Masukkan kredensial Anda</p>
               </div>
               {/* <div className="flex flex-col items-center gap-1">
@@ -180,13 +181,14 @@ export default function LoginPage() {
           objectFit="cover"
         />
       </div> */}
-      <div className="relative -z-10 ">
+      <div className="relative -z-10 w-full h-full">
         {/* Gambar latar */}
         <Image
           src="/seed.jpg"
           alt="login background"
           fill
-          className="object-cover"
+          objectFit="cover"
+          // className="object-cover"
           priority
         />
 
