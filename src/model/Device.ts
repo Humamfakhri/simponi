@@ -4,7 +4,7 @@ export interface Device {
   id: string;
   name: string;
   location: string;
-  status: string;
+  status: boolean;
   latestReading: Readings | null;
   readings: Readings[];
 }

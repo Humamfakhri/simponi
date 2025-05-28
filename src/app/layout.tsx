@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   description: "Sistem Monitoring Indoor Hidroponik",
 };
 
+
 export default function RootLayout({
   children,
 }: Readonly<{

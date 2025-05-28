@@ -142,6 +142,16 @@
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
 
+  .glass-login {
+    /* From https://css.glass */
+    /* background: #ffffff4d; */
+    /* border-radius: 16px; */
+    /* box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1); */
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    border: 1px solid rgba(255, 255, 255, 1);
+  }
+
   .glass-navbar {
     /* From https://css.glass */
     /* background: #d7d9db; */

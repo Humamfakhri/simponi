@@ -1,5 +1,7 @@
+"use client";
+
 import { initializeApp } from "firebase/app";
-import { getAuth, signOut } from "firebase/auth";
+import { updateProfile, getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { redirect } from 'next/navigation';
 import {
     getFirestore,
@@ -13,8 +15,13 @@ import {
     deleteDoc,
     WithFieldValue,
     DocumentData,
+    onSnapshot,
 } from "firebase/firestore";
-// import {Peraturan} from "@/model/peraturan";
+import { useEffect, useState } from "react";
+import { Device } from "@/model/Device";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import "dayjs/locale/id";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -49,7 +56,7 @@ export const auth = getAuth(app);
 export const handleLogout = async () => {
     try {
         await signOut(auth);
-        // console.log("Logout berhasil");
+        console.log("Logout berhasil");
         redirect('/login');
     } catch (error) {
         console.error("Logout gagal:", error);
@@ -151,3 +158,98 @@ export async function deleteDocument(collectionName: string, id: string): Promis
         return false;
     }
 }
+
+export function useDevicesRealtime() {
+    const [devices, setDevices] = useState<Device[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const unsub = onSnapshot(collection(db, "devices"), (snapshot) => {
+            const docs = snapshot.docs.map((doc) => {
+                const data = doc.data();
+                return {
+                    id: doc.id,
+                    ...data,
+                } as Device;
+            });
+
+            setDevices(docs);
+            setLoading(false);
+        });
+
+        return () => unsub();
+    }, []);
+
+    return { devices, loading };
+}
+
+// function getTimeAgo(isoString: string): { label: string; minutes: number } {
+//     const last = new Date(isoString);
+//     const now = new Date();
+//     const diffMs = now.getTime() - last.getTime();
+//     const diffMin = Math.floor(diffMs / 60000); // 1 menit = 60000ms
+
+//     let label = "Baru saja";
+//     if (diffMin === 1) label = "1 menit lalu";
+//     else if (diffMin > 1) label = `${diffMin} menit lalu`;
+
+//     return { label, minutes: diffMin };
+// }
+
+dayjs.extend(relativeTime);
+dayjs.locale("id");
+
+export function LastUpdated({ timestamp, deviceId }: { timestamp: string, deviceId: string }) {
+    const [label, setLabel] = useState("");
+
+    useEffect(() => {
+        const now = dayjs();
+        const time = dayjs(timestamp);
+        const diffMinutes = now.diff(time, "minute");
+        const diffHours = now.diff(time, "hour");
+        const diffDays = now.diff(time, "day");
+
+        if (diffDays >= 3) {
+            // Contoh: 26 Mei 2025 | 14:26
+            setLabel(time.format("D MMMM YYYY | HH:mm"));
+        } else if (diffDays >= 1) {
+            setLabel(`${diffDays} hari lalu`);
+        } else if (diffHours >= 1) {
+            setLabel(`${diffHours} jam lalu`);
+        } else {
+            setLabel(`${diffMinutes} menit lalu`);
+        }
+
+        if (diffMinutes >= 2) {
+            const ref = doc(db, "devices", deviceId);
+            updateDoc(ref, {
+                status: false,
+            }).then(() => {
+                console.log("Status updated to false due to inactivity");
+            }).catch((err) => {
+                console.error("Update failed:", err);
+            });
+        }
+    }, [timestamp, deviceId]);
+
+    return label;
+}
+
+export function getCurrentUser(): Promise<User | null> {
+    return new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        unsubscribe(); // hentikan listener segera setelah mendapatkan user
+        resolve(user);
+      });
+    });
+  }
+
+  export async function setDisplayName(name: string) {
+    const user = auth.currentUser;
+    if (user) {
+      await updateProfile(user, { displayName: name });
+      console.log("Display name updated: ", name);
+    } else {
+      console.warn("No user is logged in");
+    }
+  }
