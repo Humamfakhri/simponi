@@ -35,7 +35,7 @@ export default function DashboardPage() {
       {/* <main className="bg-radial-[at_50%_75%] from-[#b3beda] to-[#d7d9db] to-90% py-8"> */}
       {/* <main className="bg-linear-to-b from-[#dbdbdb] to-[#b3beda]"> */}
       <div className="container mx-auto">
-        <h1 className="text-4xl text-center lg:text-start font-black font-heading mt-28 mb-8 mx-8">Dashboard</h1>
+        <h1 className="text-3xl lg:text-4xl text-center lg:text-start font-black font-heading mt-32 lg:mt-28 mb-16 lg:mb-8 mx-8">Dashboard</h1>
         {devices && devices.length === 0 && selectedDevice == null
           ?
           <div className="text-center text-muted-foreground">
@@ -43,7 +43,7 @@ export default function DashboardPage() {
             <p className="text-sm">Please add a device to get started</p>
           </div>
           :
-          <div className="px-8 py-8 glass rounded-4xl relative">
+          <div className="px-3 lg:px-8 py-8 mx-2 glass rounded-4xl relative">
             <div className="absolute top-0 left-1/2 -translate-x-1/2">
               <div className="relative bg-white/20 pt-3 pb-4 px-6 rounded-b-4xl border border-white/60">
                 {/* <div className="absolute -right-6 top-0 h-full w-12 bg-[#ffffff4d] rounded-l-full z-0"></div> */}
@@ -79,7 +79,7 @@ export default function DashboardPage() {
               </div>
             </div>
             <div className="flex items-center justify-between mb-6">
-              <div className="flex flex-col gap-2 mt-16 lg:mt-0">
+              <div className="flex flex-col gap-2 mt-24 lg:mt-0">
                 <div className="flex items-center gap-2">
                   {selectedDevice?.status === true ? (
                     <span className="relative flex size-3">
@@ -92,11 +92,11 @@ export default function DashboardPage() {
                       <span className="relative inline-flex size-3 rounded-full bg-red-600"></span>
                     </span>
                   )}
-                  <h2 className="text-xl font-black font-heading">{selectedDevice?.name}</h2>
+                  <h2 className="text-lg lg:text-xl font-black font-heading">{selectedDevice?.name}</h2>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 text-xs lg:text-sm text-muted-foreground">
                   <MapPin strokeWidth={1} className="size-4" />
-                  <p className="font-light max-w-xs lg:max-w-xl truncate">{selectedDevice?.location}</p>
+                  <p className="font-light max-w-[280px] lg:max-w-xl truncate">{selectedDevice?.location}</p>
                 </div>
               </div>
               <div className="hidden lg:flex items-center justify-center gap-2">

@@ -180,7 +180,7 @@ export default function LoginPage() {
           objectFit="cover"
         />
       </div> */}
-      <div className="relative -z-10 w-full h-full">
+      <div className="relative -z-10 ">
         {/* Gambar latar */}
         <Image
           src="/seed.jpg"

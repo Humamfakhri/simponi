@@ -36,7 +36,9 @@ export default function Navbar() {
   return (
     <nav className="glass-navbar absolute top-0 w-full z-50 px-4 lg:px-0">
       <div className="container mx-auto flex items-center justify-between py-6">
-        <Image src="/logo.jpg" alt="logo" width={140} height={140} className='rounded-md' />
+        <Image src="/logo.jpg" alt="logo" width={140} height={140} className='hidden lg:block rounded-md' />
+        <Image src="/logo.jpg" alt="logo" width={96} height={96} className='block lg:hidden rounded-md' />
+        {/* <Image src="/logo.jpg" alt="logo" width={140} height={140} className='rounded-md' /> */}
         {/* <div className="flex items-center gap-2 bg-radial-[at_50%_75%] from-emerald-200 via-white/40 to-white/40  px-3 py-2 rounded-2xl">
           <Music2 strokeWidth={3} className='size-5' />
           <Leaf strokeWidth={3} className='size-5 -ml-4' />
@@ -77,7 +79,7 @@ export default function Navbar() {
             <Link href='/login'>
               <button
                 type="button"
-                className={`w-full text-white px-8 py-3 text-sm rounded-lg flex justify-center items-center bg-emerald-500 hover:bg-emerald-600 shadow-lg hover:shadow-none shadow-emerald-500 cursor-pointer transition-all duration-200 ease-in-out`}
+                className={`w-full text-white px-6 lg:px-8 py-2 lg:py-3 text-sm rounded-lg flex justify-center items-center bg-emerald-500 hover:bg-emerald-600 shadow lg:shadow-lg hover:shadow-none shadow-emerald-500 cursor-pointer transition-all duration-200 ease-in-out`}
               >
                 Masuk
               </button>
