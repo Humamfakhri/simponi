@@ -195,9 +195,9 @@ const Gauge: React.FC<GaugeProps> = ({ value, ticks, minValue, maxValue, subArcs
         labels={{
           valueLabel: {
             formatTextValue: value => `${value}`,
-            style: { textShadow: "none", fill: "var(--primary)", fontWeight: "900", fontSize: 44 },
+            style: { textShadow: "none", fontWeight: "900", fontSize: 44 },
             // oklch(0.47 0 0)
-            // matchColorWithArc: true,
+            matchColorWithArc: true,
             // hide: true
           },
           tickLabels: {

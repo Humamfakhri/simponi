@@ -52,7 +52,9 @@
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
+  /* --primary: oklch(0.208 0.042 265.755); */
+  --primary: oklch(69.6% 0.17 162.48);
+  /* #00bc7d */
   --primary-foreground: oklch(0.984 0.003 247.858);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
@@ -131,7 +133,9 @@
     box-shadow: 0 0 0px 1000px transparent inset !important;
     background-color: transparent !important;
   }
+}
 
+@layer utilities {
   .glass {
     /* From https://css.glass */
     background: #ffffff4d;
@@ -164,8 +168,13 @@
   }
 
   .flexCenter {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @apply flex items-center justify-center;
+  }
+
+  .glass-container {
+    @apply px-3 lg:px-8 py-6 mx-2 mt-4 rounded-4xl relative bg-[#ffffff4d] backdrop-blur-[50px] border border-white/30;
+  }
+  .flat-glass-container {
+    @apply relative bg-[#ffffff4d] backdrop-blur-[50px] border border-white/30;
   }
 }

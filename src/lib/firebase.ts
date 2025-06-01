@@ -1,7 +1,7 @@
 "use client";
 
 import { initializeApp } from "firebase/app";
-import { updateProfile, getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile, getAuth, onAuthStateChanged, signOut, User } from "firebase/auth";
 import { redirect } from 'next/navigation';
 import {
     getFirestore,
@@ -16,12 +16,17 @@ import {
     WithFieldValue,
     DocumentData,
     onSnapshot,
+    arrayUnion,
+    arrayRemove,
+    serverTimestamp,
 } from "firebase/firestore";
+import { useAuthState } from "react-firebase-hooks/auth";
 import { useEffect, useState } from "react";
 import { Device } from "@/model/Device";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/id";
+import { User as UserModel } from "@/model/User";
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -57,7 +62,7 @@ export const handleLogout = async () => {
     try {
         await signOut(auth);
         console.log("Logout berhasil");
-        redirect('/login');
+        redirect('/masuk');
     } catch (error) {
         console.error("Logout gagal:", error);
     }
@@ -159,29 +164,29 @@ export async function deleteDocument(collectionName: string, id: string): Promis
     }
 }
 
-export function useDevicesRealtime() {
-    const [devices, setDevices] = useState<Device[]>([]);
-    const [loading, setLoading] = useState(true);
+// export function useDevicesRealtime() {
+//     const [devices, setDevices] = useState<Device[]>([]);
+//     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const unsub = onSnapshot(collection(db, "devices"), (snapshot) => {
-            const docs = snapshot.docs.map((doc) => {
-                const data = doc.data();
-                return {
-                    id: doc.id,
-                    ...data,
-                } as Device;
-            });
+//     useEffect(() => {
+//         const unsub = onSnapshot(collection(db, "devices"), (snapshot) => {
+//             const docs = snapshot.docs.map((doc) => {
+//                 const data = doc.data();
+//                 return {
+//                     id: doc.id,
+//                     ...data,
+//                 } as Device;
+//             });
 
-            setDevices(docs);
-            setLoading(false);
-        });
+//             setDevices(docs);
+//             setLoading(false);
+//         });
 
-        return () => unsub();
-    }, []);
+//         return () => unsub();
+//     }, []);
 
-    return { devices, loading };
-}
+//     return { devices, loading };
+// }
 
 // function getTimeAgo(isoString: string): { label: string; minutes: number } {
 //     const last = new Date(isoString);
@@ -253,3 +258,174 @@ export function getCurrentUser(): Promise<User | null> {
       console.warn("No user is logged in");
     }
   }
+
+  // 1️⃣ Registrasi User + Buat Dokumen di Collection "users"
+// import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+// import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+// import { auth, db } from "@/lib/firebase";
+
+export const registerUser = async (
+  name: string,
+  email: string,
+  password: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    // Buat akun Firebase Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // Update displayName (optional)
+    if (auth.currentUser) {
+      await updateProfile(auth.currentUser, { displayName: name });
+    }
+
+    // Buat dokumen di Firestore (collection: users)
+    await setDoc(doc(db, "users", user.uid), {
+      name,
+      email,
+      devices: [], // Kosong saat registrasi
+      createdAt: serverTimestamp(),
+    });
+    return { success: true, message: "Registrasi berhasil" };
+  } catch (error) {
+    // console.error("Registrasi gagal:", error);
+    return { success: false, message: error instanceof Error ? error.message : String(error) };
+  }
+};
+
+
+// 2️⃣ Realtime Devices Berdasarkan User yang Login
+// import { onSnapshot, doc } from "firebase/firestore";
+// import { useEffect, useState } from "react";
+// import { useAuthState } from "react-firebase-hooks/auth";
+// import { auth, db } from "@/lib/firebase";
+// import { User as UserModel, Device } from "@/types";
+
+export function useDevicesRealtime() {
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [user] = useAuthState(auth);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const userRef = doc(db, "users", user.uid);
+    const unsub = onSnapshot(userRef, async (snapshot) => {
+      const userData = snapshot.data() as UserModel | undefined;
+      if (!userData || !userData.devices || userData.devices.length === 0) {
+        setDevices([]);
+        setLoading(false);
+        return;
+      }
+
+      // Ambil data devices berdasarkan ID yang tersimpan
+      const devicePromises = userData.devices.map(async (deviceId) => {
+        const deviceSnap = await getDoc(doc(db, "devices", deviceId));
+        if (deviceSnap.exists()) {
+          return { id: deviceSnap.id, ...deviceSnap.data() } as Device;
+        }
+        return null;
+      });
+
+      const deviceResults = await Promise.all(devicePromises);
+      const filtered = deviceResults.filter((d): d is Device => d !== null);
+
+      setDevices(filtered);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, [user]);
+
+  return { devices, loading };
+}
+
+
+// 3️⃣ Tambahkan Device ke Field "devices" dalam Dokumen User
+// import { arrayUnion, doc, updateDoc } from "firebase/firestore";
+// import { auth, db } from "@/lib/firebase";
+// import { Device } from "@/types";
+
+// export const addDeviceToUser = async (deviceCode: string): Promise<{ success: boolean; message: string }> => {
+//   const currentUser = auth.currentUser;
+//   if (!currentUser) return { success: false, message: "User belum login" };
+
+//   try {
+//     const userRef = doc(db, "users", currentUser.uid);
+//     await updateDoc(userRef, {
+//       devices: arrayUnion(deviceCode),
+//     });
+//     return { success: true, message: "Device berhasil ditambahkan" };
+//   } catch (error) {
+//     console.error("Gagal menambahkan device:", error);
+//     return { success: false, message: error instanceof Error ? error.message : String(error) };
+//   }
+// };
+
+export const addDeviceToUser = async (
+  deviceCode: string
+): Promise<{ success: boolean; message: string }> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    return { success: false, message: "User belum login" };
+  }
+
+  const userRef = doc(db, "users", currentUser.uid);
+  const deviceRef = doc(db, "devices", deviceCode);
+
+  try {
+    // Tambahkan deviceCode ke array devices milik user
+    await updateDoc(userRef, {
+      devices: arrayUnion(deviceCode),
+    });
+
+    // Ambil informasi device
+    const deviceSnap = await getDoc(deviceRef);
+    if (!deviceSnap.exists()) {
+      return { success: false, message: "Device tidak ditemukan" };
+    }
+
+    const deviceData = deviceSnap.data();
+    const isOwnerExists = !!deviceData.owner;
+
+    if (!isOwnerExists) {
+      // Jika belum ada owner, tetapkan current user sebagai owner
+      await updateDoc(deviceRef, {
+        owner: currentUser.uid,
+        sharedWith: [], // inisialisasi jika belum ada
+      });
+    } else {
+      // Jika sudah ada owner, tambahkan ke sharedWith jika belum ada
+      const sharedWith: string[] = deviceData.sharedWith || [];
+      if (!sharedWith.includes(currentUser.uid)) {
+        await updateDoc(deviceRef, {
+          sharedWith: arrayUnion(currentUser.uid),
+        });
+      }
+    }
+
+    return { success: true, message: "Device berhasil ditambahkan" };
+  } catch (error) {
+    console.error("Gagal menambahkan device:", error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+};
+
+export const removeDeviceFromUser = async (deviceCode: string): Promise<{ success: boolean; message: string }> => {
+  const currentUser = auth.currentUser;
+  if (!currentUser) return { success: false, message: "User belum login" };
+
+  try {
+    const userRef = doc(db, "users", currentUser.uid);
+    await updateDoc(userRef, {
+      devices: arrayRemove(deviceCode),
+    });
+    return { success: true, message: "Device berhasil dihapus" };
+  } catch (error) {
+    console.error("Gagal menghapus device:", error);
+    return { success: false, message: error instanceof Error ? error.message : String(error) };
+  }
+};

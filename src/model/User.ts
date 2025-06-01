@@ -1,0 +1,8 @@
+import { Timestamp } from "firebase/firestore";
+
+export interface User {
+  name: string;
+  email: string;
+  devices: string[];
+  createdAt: Timestamp;
+}

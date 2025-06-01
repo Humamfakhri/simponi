@@ -1,7 +1,7 @@
 "use client";
 
 // import { Bell, Leaf, Mail, Music2 } from 'lucide-react';
-import { UserRound } from 'lucide-react';
+import { Leaf, UserRound } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,8 +12,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { getCurrentUser, handleLogout } from '@/lib/firebase';
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
+import { Button } from './ui/button';
 
 
 export default function Navbar() {
@@ -36,14 +36,16 @@ export default function Navbar() {
   return (
     <nav className="glass-navbar absolute top-0 w-full z-50 px-4 lg:px-0">
       <div className="container mx-auto flex items-center justify-between py-6">
-        <Image src="/logo.jpg" alt="logo" width={140} height={140} className='hidden lg:block rounded-md' />
-        <Image src="/logo.jpg" alt="logo" width={96} height={96} className='block lg:hidden rounded-md' />
+        {/* <Image src="/logo.jpg" alt="logo" width={140} height={140} className='hidden lg:block rounded-md' />
+        <Image src="/logo.jpg" alt="logo" width={96} height={96} className='block lg:hidden rounded-md' /> */}
         {/* <Image src="/logo.jpg" alt="logo" width={140} height={140} className='rounded-md' /> */}
-        {/* <div className="flex items-center gap-2 bg-radial-[at_50%_75%] from-emerald-200 via-white/40 to-white/40  px-3 py-2 rounded-2xl">
-          <Music2 strokeWidth={3} className='size-5' />
-          <Leaf strokeWidth={3} className='size-5 -ml-4' />
+        <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-linear-to-r from-emerald-300 from-0% via-30% via-white/30 to-white/40">
+        {/* <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-linear-to-r from-emerald-300 from-0% via-30% via-white/40 to-white/40 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all duration-200 ease-in-out"> */}
+        {/* <div className="flex items-center gap-2 bg-radial-[at_50%_75%] from-emerald-200 via-white/40 to-white/40  px-3 py-2 rounded-2xl"> */}
+          {/* <Music2 strokeWidth={3} className='size-5' /> */}
+          <Leaf strokeWidth={3} className='size-5' />
           <span className="text-xl font-black font-heading">SIMPONI</span>
-        </div> */}
+        </div>
         <ul className="flex items-center gap-2">
           {/* <li>
             <div className="aspect-square bg-muted/70 rounded-full size-12 flex items-center justify-center">
@@ -63,26 +65,29 @@ export default function Navbar() {
                     <UserRound className="text-foreground/70 size-5" />
                   </div>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent sideOffset={24} side="bottom" align="end" className='p-2 min-w-40'>
+                <DropdownMenuContent sideOffset={10} side="bottom" align="end" className='p-2 min-w-40 bg-white/60 border border-white/60 backdrop-blur-sm'>
                   <DropdownMenuLabel className='flex flex-col gap-1'>
                     <p className='text-xs text-muted-foreground font-light'>Login sebagai</p>
                     <p>{userName}</p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className='text-destructive hover:text-destructive/80! hover:underline hover:bg-transparent! cursor-pointer' onClick={handleLogout}>
+                  <DropdownMenuItem className='text-destructive! hover:text-destructive/80! hover:underline bg-transparent! cursor-pointer' onClick={handleLogout}>
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </li>
             :
-            <Link href='/login'>
-              <button
+            <Link href='/masuk'>
+              {/* <button
                 type="button"
-                className={`w-full text-white px-6 lg:px-8 py-2 lg:py-3 text-sm rounded-lg flex justify-center items-center bg-emerald-500 hover:bg-emerald-600 shadow lg:shadow-lg hover:shadow-none shadow-emerald-500 cursor-pointer transition-all duration-200 ease-in-out`}
+                className={`w-full text-white px-6 lg:px-8 py-2 lg:py-3 text-sm rounded-lg flex justify-center items-center bg-emerald-500 hover:bg-emerald-600 shadow hover:shadow-none shadow-emerald-500 cursor-pointer transition-all duration-200 ease-in-out`}
               >
                 Masuk
-              </button>
+              </button> */}
+              <Button className='shadow shadow-primary hover:shadow-none rounded-full px-8'>
+                Masuk
+              </Button>
             </Link>
           }
         </ul>

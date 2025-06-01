@@ -3,6 +3,9 @@ import { Timestamp } from "firebase/firestore";
 export interface Device {
   id: string;
   name: string;
+  owner: string;
+  isShareable: boolean;
+  sharedWith: string[];
   location: string;
   status: boolean;
   latestReading: Readings | null;
