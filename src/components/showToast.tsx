@@ -1,5 +1,4 @@
 import { toast } from "sonner"
-import React, { JSX } from "react"
 import { CircleCheck, CircleX } from "lucide-react"
 
 type CustomToastProps = {

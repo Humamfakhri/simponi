@@ -172,7 +172,7 @@
   }
 
   .glass-container {
-    @apply px-3 lg:px-8 py-6 mx-2 mt-4 rounded-4xl relative bg-[#ffffff4d] backdrop-blur-[50px] border border-white/30;
+    @apply px-4 lg:px-8 py-3 lg:py-6 rounded-2xl lg:rounded-4xl relative bg-[#ffffff4d] backdrop-blur-[50px] border border-white/30;
   }
   .flat-glass-container {
     @apply relative bg-[#ffffff4d] backdrop-blur-[50px] border border-white/30;

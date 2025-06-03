@@ -1,5 +1,5 @@
 "use client";
-import { Bell, CircleGauge, Settings2 } from "lucide-react";
+import { CircleGauge, Settings2 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Tooltip,
@@ -12,13 +12,13 @@ import Link from "next/link";
 export default function Sidebar() {
   const menuItems = [
     { href: "/", label: "Dashboard", urlPathname: "", icon: <CircleGauge className="size-5" /> },
-    { href: "/notifikasi", label: "Notifikasi", urlPathname: "notifikasi", icon: <Bell className="size-5" /> },
+    // { href: "/notifikasi", label: "Notifikasi", urlPathname: "notifikasi", icon: <Bell className="size-5" /> },
     { href: "/pengaturan", label: "Pengaturan", urlPathname: "pengaturan", icon: <Settings2 className="size-5" /> },
   ];
 
   const pathname = usePathname();
   return (
-    <ul className="flex flex-col gap-5 sticky top-0 pt-4">
+    <ul className="hidden lg:flex lg:flex-col gap-5 sticky top-0 pt-4">
       {menuItems.map(({ href, label, urlPathname, icon }) => {
         const isActive = pathname.split('/')[1] === urlPathname;
         return (

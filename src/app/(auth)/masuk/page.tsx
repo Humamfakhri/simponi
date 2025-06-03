@@ -59,16 +59,16 @@ export default function MasukPage() {
 
   return (
     <>
-      <div className="flex justify-center items-center bg-transparent pt-3 pb-4 px-6 absolute w-full h-full">
-        <div>
+      <div className="flex justify-center items-center bg-transparent pt-3 pb-4 absolute w-full lg:mx-auto h-full">
+        <div className="grow lg:grow-0 lg:w-fit px-3 lg:mx-auto">
           <form
             onSubmit={(e) => {
               e.preventDefault(); // mencegah reload halaman
               handleMasuk(email, password);
             }}
-            className="text-center flex flex-col gap-4 border border-white bg-white/50 backdrop-blur-md px-4 py-8 lg:p-12 rounded-3xl z-10 w-full min-w-md"
+            className="text-center flex flex-col gap-4 border border-white bg-white/50 backdrop-blur-md px-6 py-8 lg:p-12 rounded-3xl z-10 w-full lg:min-w-md"
           >
-            <div className="header text-center lg:mb-10">
+            <div className="header text-center mb-10">
               <div className="flex flex-col items-center justify-center">
                 <div className="flex items-center gap-2 px-3 py-2 rounded-full">
                   <Leaf strokeWidth={3} className='size-8' />
