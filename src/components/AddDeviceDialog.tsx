@@ -13,7 +13,7 @@ import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { addDeviceToUser, auth, getDocument } from "@/lib/firebase";
 import { CircleHelp, Search, Vault } from "lucide-react";
@@ -21,9 +21,11 @@ import { showToast } from "./showToast";
 import { useEffect, useState } from "react";
 import { Device } from "@/model/Device";
 import { Badge } from "./ui/badge";
-import { User } from "@/model/User";
 
-export default function AddDeviceDialog({ children }: Readonly<{ children: React.ReactNode }>) {
+export default function AddDeviceDialog({
+  children,
+  devices,
+}: Readonly<{ children: React.ReactNode; devices: Device[] }>) {
   const [addDeviceCode, setAddDeviceCode] = useState("");
   const [errorSearchDevice, setErrorSearchDevice] = useState<string | null>(null);
   const [isLoadingDeviceCode, setIsLoadingDeviceCode] = useState(false);
@@ -51,8 +53,8 @@ export default function AddDeviceDialog({ children }: Readonly<{ children: React
     setIsDeviceAlreadyAdded(false);
 
     if (currentUser) {
-      const userDoc = await getDocument<User>("users", currentUser.uid);
-      if (userDoc?.devices.includes(deviceCode)) {
+      // const userDoc = await getDocument<User>("users", currentUser.uid);
+      if (devices.map(d => d.id).includes(deviceCode)) {
         setIsDeviceAlreadyAdded(true);
       }
     }
@@ -75,7 +77,6 @@ export default function AddDeviceDialog({ children }: Readonly<{ children: React
           }
         });
     } catch (error) {
-      // console.error("Login gagal:", error);
       setErrorSearchDevice(error instanceof Error ? error.message : String(error));
     } finally {
       setIsLoadingDeviceCode(false);
@@ -84,15 +85,13 @@ export default function AddDeviceDialog({ children }: Readonly<{ children: React
 
   const handleAddDevice = async () => {
     setIsLoadingAddingDevice(true);
-    const result = await addDeviceToUser(addDeviceCode);
+    const result = await addDeviceToUser(addDeviceCode, devices.map(d => d.id));
     if (result.success) {
       showToast({ message: "Berhasil menambahkan perangkat", variant: "success" })
       setAddDeviceCode("");
       setIsDeviceFound(false);
       setNewDevice(null);
       setIsDeviceAdded(true);
-      // } else if (result.message === "Device sudah ditambahkan") {
-      //   SetIsDeviceAlreadyAdded(true);
     } else {
       showToast({ message: result.message, variant: "error" })
       console.error(result.message);
@@ -106,7 +105,6 @@ export default function AddDeviceDialog({ children }: Readonly<{ children: React
       setIsDeviceAdded(false);
     }
   }, [isDeviceAdded])
-
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -130,8 +128,6 @@ export default function AddDeviceDialog({ children }: Readonly<{ children: React
               onChange={(e) => setAddDeviceCode(e.target.value)}
             />
             <Button
-              // type="button"
-              // onClick={() => handleSearchDevice(addDeviceCode)}
               disabled={addDeviceCode.length < 3}
             >
               {isLoadingDeviceCode
@@ -190,7 +186,7 @@ export default function AddDeviceDialog({ children }: Readonly<{ children: React
                 </Tooltip>
               </div>
             }
-            {owner == currentUser?.uid &&
+            {owner == currentUser?.uid && !isDeviceAlreadyAdded &&
               <Badge variant={"outlineDefault"}>Perangkat milik Anda</Badge>
             }
             {isDeviceAlreadyAdded ?

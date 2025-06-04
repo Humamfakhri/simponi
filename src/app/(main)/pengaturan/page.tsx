@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -23,31 +24,48 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { auth, removeDeviceFromUser, updateDocument, useDevicesRealtime } from "@/lib/firebase";
+import { auth, removeDeviceFromUser, removeUserFromSharedWith, updateDocument, useDevicesRealtime, useSharedUsers } from "@/lib/firebase";
 import { Device } from "@/model/Device";
-import { Copy, Info, MapPin, Plus, UserCircle2 } from "lucide-react";
+import { CircleMinus, Copy, Info, MapPin, Plus, UserCircle2 } from "lucide-react";
+import Image from 'next/image';
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function PengaturanPage() {
+  const currentUser = auth.currentUser
   const { devices, loading } = useDevicesRealtime();
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const ownedDevices = devices.filter(device => device.owner === currentUser?.uid);
+  const sharedDevices = devices.filter(device => currentUser?.uid !== undefined && device.sharedWith?.includes(currentUser.uid));
+  const [activeTab, setActiveTab] = useState<"owned" | "shared">("owned");
+  const visibleDevices = activeTab === "owned" ? ownedDevices : sharedDevices;
+
   const [isShareable, setIsShareable] = useState<boolean>(selectedDevice?.isShareable || false);
-  const currentUser = auth.currentUser
   const isOwner = currentUser?.uid === selectedDevice?.owner;
   const [deviceName, setDeviceName] = useState(selectedDevice?.name || "");
   const [deviceLocation, setDeviceLocation] = useState(selectedDevice?.location || "");
   const [loadingUpdate, setLoadingUpdate] = useState("")
+  // const { users, loadingUsers } = useSharedUsers(selectedDevice?.sharedWith || []);
+  const uids = useMemo(() => selectedDevice?.sharedWith || [], [selectedDevice]);
+  const { users, loadingUsers } = useSharedUsers(uids);
+
 
   const router = useRouter();
 
+  // useEffect(() => {
+  //   if (devices.length > 0) {
+  //     setSelectedDevice(devices[0] || null);
+  //     setDeviceName(devices[0].name || "");
+  //     setDeviceLocation(devices[0].location || "");
+  //   }
+  // }, [devices]);
   useEffect(() => {
-    if (devices.length > 0) {
-      setSelectedDevice(devices[0] || null);
-      setDeviceName(devices[0].name || "");
-      setDeviceLocation(devices[0].location || "");
+    if (visibleDevices.length > 0) {
+      setSelectedDevice(visibleDevices[0]);
+    } else {
+      setSelectedDevice(null);
     }
-  }, [devices]);
+  }, [activeTab, devices, visibleDevices]);
 
   useEffect(() => {
     if (selectedDevice) {
@@ -67,7 +85,7 @@ export default function PengaturanPage() {
         showToast({ message: "Berhasil menghapus perangkat", variant: "success" });
         // console.log(selectedDevice);
         // console.log(devices.length);
-        
+
         // harusnya 0
         if (devices.length === 1) {
           router.push("/");
@@ -76,6 +94,27 @@ export default function PengaturanPage() {
     } catch (error) {
       showToast({ message: "Gagal menghapus perangkat", variant: "error" });
       console.error("Gagal menghapus perangkat:", error);
+    }
+  }
+
+  const handleRemoveUser = async (uid: string) => {
+    if (!selectedDevice) return;
+
+    try {
+      const result = await removeUserFromSharedWith(selectedDevice.id, uid);
+      if (result.success) {
+        showToast({ message: "Berhasil menghapus pengguna", variant: "success" });
+        // console.log(selectedDevice);
+        // console.log(devices.length);
+
+        // harusnya 0
+        if (devices.length === 1) {
+          router.push("/");
+        }
+      }
+    } catch (error) {
+      showToast({ message: "Gagal menghapus pengguna", variant: "error" });
+      console.error("Gagal menghapus pengguna:", error);
     }
   }
 
@@ -129,7 +168,7 @@ export default function PengaturanPage() {
 
   if (loading) {
     return (
-      <main className="bg-radial-[at_50%_75%] from-emerald-200 via-sky-100 to-[#d7d9db] to-90% py-8">
+      <main className="bg-main py-8">
         <div className="container mx-auto min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-emerald-400"></div>
         </div>
@@ -145,13 +184,31 @@ export default function PengaturanPage() {
         <div className="flex items-start gap-4">
           <Sidebar />
           <div className="grow flex flex-col gap-4 px-2">
+            <div className="flex items-center gap-4">
+              <div className="flex gap-2 mb-4">
+                <Button
+                  variant={activeTab === "owned" ? "dark" : "glass"}
+                  className="rounded-full"
+                  onClick={() => setActiveTab("owned")}
+                >
+                  Perangkat Anda
+                </Button>
+                <Button
+                  variant={activeTab === "shared" ? "dark" : "glass"}
+                  className="rounded-full"
+                  onClick={() => setActiveTab("shared")}
+                >
+                  Dibagikan
+                </Button>
+              </div>
+            </div>
             <div className="glass-container">
               {/* DEVICES TAB */}
               <div className="absolute top-0 right-1/2 lg:right-0 translate-x-1/2 lg:translate-x-0">
                 {/* <div className="absolute top-0 left-1/2 -translate-x-1/2"> */}
                 <div className="relative bg-white/10 pt-3 pb-4 px-6 rounded-b-4xl lg:rounded-br-none lg:rounded-bl-4xl lg:rounded-tr-4xl border border-white/60">
                   <div className="flex items-center gap-6">
-                    {devices?.map((device, index) => (
+                    {visibleDevices?.map((device, index) => (
                       <Button
                         key={device.id}
                         onClick={() => setSelectedDevice(device)}
@@ -161,7 +218,7 @@ export default function PengaturanPage() {
                         {index + 1}
                       </Button>
                     ))}
-                    <AddDeviceDialog>
+                    <AddDeviceDialog devices={devices}>
                       <Button variant={"outline"} className="flex items-center justify-center size-12 rounded-full cursor-pointer transition-all border border-ring/60 bg-transparent">
                         <Plus className="size-4 text-secondary-foreground" />
                       </Button>
@@ -232,7 +289,27 @@ export default function PengaturanPage() {
             <div>
               <div className={`${isOwner ? "flex" : "hidden"} flat-glass-container rounded-t-2xl lg:rounded-t-4xl flex-col items-start gap-4 px-4 lg:px-8 pt-3 lg:pt-6 pb-6`}>
                 <div className="flex items-center justify-between w-full">
-                  <h1 className='text-lg lg:text-xl font-black font-heading'>Bagikan Akses</h1>
+                  <h1 className='text-lg lg:text-xl font-black font-heading mb-2'>Bagikan Akses</h1>
+                  {/* <div className="flex items-center gap-2">
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Switch className={`cursor-pointer ${isShareable ? "bg-primary" : "bg-input"}`} checked={isShareable} />
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Berhenti bagikan?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Pengguna lain tidak akan dapat mengakses perangkat ini sampai Anda membagikannya lagi.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel variant='ghost'>Batal</AlertDialogCancel>
+                          <AlertDialogAction variant='outline' onClick={handleToggleShareable} autoFocus>Ya</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                    <p className='text-sm text-foreground font-bold'>Dapat dibagikan</p>
+                  </div> */}
                   <div className="flex lg:hidden items-center gap-2">
                     {isShareable
                       ?
@@ -298,20 +375,57 @@ export default function PengaturanPage() {
                   </div>
                   <hr className='mb-2' />
                   <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-3">
-                      <UserCircle2 className='opacity-80 shrink-0' />
-                      <div className="flex flex-col">
-                        <p className='text-sm font-semibold'>Bebas</p>
-                        <p className='text-xs '>bebas@gmail.com</p>
+                    {loadingUsers
+                      ?
+                      <div className="flex items-center space-x-4">
+                        <Skeleton className="h-12 w-12 rounded-full bg-muted-foreground/40" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-[250px] bg-muted-foreground/40" />
+                          <Skeleton className="h-4 w-[200px] bg-muted-foreground/40" />
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <UserCircle2 className='opacity-80 shrink-0' />
-                      <div className="flex flex-col">
-                        <p className='text-sm font-semibold'>Bebas</p>
-                        <p className='text-xs '>bebas@gmail.com</p>
-                      </div>
-                    </div>
+                      :
+                      users.length > 0
+                        ?
+                        users.map((user) => (
+                          <div key={user.uid} className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <UserCircle2 className='opacity-80 shrink-0' />
+                              <div className="flex flex-col">
+                                <p className='text-sm font-semibold'>{user.name}</p>
+                                <p className='text-xs '>{user.email}</p>
+                              </div>
+                            </div>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  className="p-0 h-auto w-auto"
+                                >
+                                  <CircleMinus className="text-destructive size-6" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Apakah Anda yakin?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Hentikan berbagi data perangkat dengan {user.email}. Pengguna dapat menambahkan kembali perangkat Anda.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Batal</AlertDialogCancel>
+                                  <AlertDialogAction variant='destructive' onClick={() => handleRemoveUser(user.uid)}>Hapus</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        ))
+                        :
+                        <div className="flex flex-col items-center justify-center gap-4 my-4">
+                          <Image src="/no_data.svg" width={80} height={80} alt="No data" className='opacity-50' />
+                          <p className='text-sm text-muted-foreground'>Tidak ada pengguna yang menambahkan perangkat ini</p>
+                        </div>
+                    }
                   </div>
                 </div>
               </div>
@@ -331,7 +445,7 @@ export default function PengaturanPage() {
                     <h2 className='font-semibold'>Nama</h2>
                     <p className='text-sm text-foreground/80'>Ini adalah nama untuk memudahkan Anda dalam mengidentifikasi perangkat.</p>
                   </div>
-                  <Input className='bg-white/80 border-white max-w-sm shadow-none' value={deviceName} onChange={(e) => setDeviceName(e.target.value)} type="text" id="nama" placeholder="Nama Perangkat" />
+                  <Input className='bg-white/80 border-white max-w-sm shadow-none text-sm' value={deviceName} onChange={(e) => setDeviceName(e.target.value)} type="text" id="nama" placeholder="Nama Perangkat" />
                 </div>
                 <div className="bg-white/10 border border-white/60 border-t-0 px-6 py-3 rounded-b-2xl">
                   <div className="flex items-center justify-between">
@@ -370,7 +484,7 @@ export default function PengaturanPage() {
                     <h2 className='font-semibold'>Lokasi</h2>
                     <p className='text-sm text-foreground/80'>Ini adalah lokasi di mana perangkat dilakukan instalasi.</p>
                   </div>
-                  <Textarea className='bg-white/80 border-white shadow-none' value={deviceLocation} onChange={(e) => setDeviceLocation(e.target.value)} id="lokasi" placeholder="Lokasi Perangkat" />
+                  <Textarea className='bg-white/80 border-white shadow-none text-sm' value={deviceLocation} onChange={(e) => setDeviceLocation(e.target.value)} id="lokasi" placeholder="Lokasi Perangkat" />
                 </div>
                 <div className="bg-white/10 border border-white/60 border-t-0 px-6 py-3 rounded-b-2xl">
                   <div className="flex items-center justify-between">

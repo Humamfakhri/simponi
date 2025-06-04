@@ -19,6 +19,7 @@ import {
   arrayUnion,
   arrayRemove,
   serverTimestamp,
+  Timestamp,
 } from "firebase/firestore";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useEffect, useState } from "react";
@@ -26,7 +27,9 @@ import { Device } from "@/model/Device";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import "dayjs/locale/id";
-import { User as UserModel } from "@/model/User";
+import { SharedUser } from "@/model/User";
+dayjs.extend(relativeTime);
+dayjs.locale("id");
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -201,44 +204,41 @@ export async function deleteDocument(collectionName: string, id: string): Promis
 //     return { label, minutes: diffMin };
 // }
 
-dayjs.extend(relativeTime);
-dayjs.locale("id");
+// export function LastUpdated({ timestamp, deviceId }: { timestamp: string, deviceId: string }) {
+//   const [label, setLabel] = useState("");
 
-export function LastUpdated({ timestamp, deviceId }: { timestamp: string, deviceId: string }) {
-  const [label, setLabel] = useState("");
+//   useEffect(() => {
+//     const now = dayjs();
+//     const time = dayjs(timestamp);
+//     const diffMinutes = now.diff(time, "minute");
+//     const diffHours = now.diff(time, "hour");
+//     const diffDays = now.diff(time, "day");
 
-  useEffect(() => {
-    const now = dayjs();
-    const time = dayjs(timestamp);
-    const diffMinutes = now.diff(time, "minute");
-    const diffHours = now.diff(time, "hour");
-    const diffDays = now.diff(time, "day");
+//     if (diffDays >= 3) {
+//       // Contoh: 26 Mei 2025 | 14:26
+//       setLabel(time.format("D MMMM YYYY | HH:mm"));
+//     } else if (diffDays >= 1) {
+//       setLabel(`${diffDays} hari lalu`);
+//     } else if (diffHours >= 1) {
+//       setLabel(`${diffHours} jam lalu`);
+//     } else {
+//       setLabel(`${diffMinutes} menit lalu`);
+//     }
 
-    if (diffDays >= 3) {
-      // Contoh: 26 Mei 2025 | 14:26
-      setLabel(time.format("D MMMM YYYY | HH:mm"));
-    } else if (diffDays >= 1) {
-      setLabel(`${diffDays} hari lalu`);
-    } else if (diffHours >= 1) {
-      setLabel(`${diffHours} jam lalu`);
-    } else {
-      setLabel(`${diffMinutes} menit lalu`);
-    }
+//     if (diffMinutes >= 2) {
+//       const ref = doc(db, "devices", deviceId);
+//       updateDoc(ref, {
+//         status: false,
+//       }).then(() => {
+//         console.log("Status updated to false due to inactivity");
+//       }).catch((err) => {
+//         console.error("Update failed:", err);
+//       });
+//     }
+//   }, [timestamp, deviceId]);
 
-    if (diffMinutes >= 2) {
-      const ref = doc(db, "devices", deviceId);
-      updateDoc(ref, {
-        status: false,
-      }).then(() => {
-        console.log("Status updated to false due to inactivity");
-      }).catch((err) => {
-        console.error("Update failed:", err);
-      });
-    }
-  }, [timestamp, deviceId]);
-
-  return label;
-}
+//   return label;
+// }
 
 export function getCurrentUser(): Promise<User | null> {
   return new Promise((resolve) => {
@@ -301,6 +301,104 @@ export const registerUser = async (
 // import { auth, db } from "@/lib/firebase";
 // import { User as UserModel, Device } from "@/types";
 
+// export function useDevicesRealtime() {
+//   const [devices, setDevices] = useState<Device[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [user] = useAuthState(auth);
+
+//   useEffect(() => {
+//     if (!user) return;
+
+//     const userRef = doc(db, "users", user.uid);
+//     const unsub = onSnapshot(userRef, async (snapshot) => {
+//       const userData = snapshot.data() as UserModel | undefined;
+//       if (!userData || !userData.devices || userData.devices.length === 0) {
+//         setDevices([]);
+//         setLoading(false);
+//         return;
+//       }
+
+//       // Ambil data devices berdasarkan ID yang tersimpan
+//       const devicePromises = userData.devices.map(async (deviceId) => {
+//         const deviceSnap = await getDoc(doc(db, "devices", deviceId));
+//         if (deviceSnap.exists()) {
+//           return { id: deviceSnap.id, ...deviceSnap.data() } as Device;
+//         }
+//         return null;
+//       });
+
+//       const deviceResults = await Promise.all(devicePromises);
+//       const filtered = deviceResults.filter((d): d is Device => d !== null);
+
+//       setDevices(filtered);
+//       setLoading(false);
+//     });
+
+//     return () => unsub();
+//   }, [user]);
+
+//   return { devices, loading };
+// }
+
+// GET DEVICES FROM USERS
+// export function useDevicesRealtime() {
+//   const [devices, setDevices] = useState<Device[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [user] = useAuthState(auth);
+
+//   useEffect(() => {
+//     if (!user) return;
+
+//     const userRef = doc(db, "users", user.uid);
+//     const unsubscribeUser = onSnapshot(userRef, async (userSnap) => {
+//       const userData = userSnap.data() as UserModel | undefined;
+//       if (!userData || !userData.devices || userData.devices.length === 0) {
+//         setDevices([]);
+//         setLoading(false);
+//         return;
+//       }
+
+//       // Hapus listener sebelumnya jika ada
+//       const unsubscribers: (() => void)[] = [];
+
+//       const realtimeDevices: Device[] = [];
+//       const deviceIds = userData.devices;
+
+//       // Dengarkan setiap device secara realtime
+//       deviceIds.forEach((deviceId) => {
+//         const deviceRef = doc(db, "devices", deviceId);
+//         const unsubscribeDevice = onSnapshot(deviceRef, (deviceSnap) => {
+//           if (deviceSnap.exists()) {
+//             const updatedDevice = { id: deviceSnap.id, ...deviceSnap.data() } as Device;
+//             // Update hanya device yang berubah
+//             realtimeDevices.push(updatedDevice);
+
+//             setDevices((prevDevices) => {
+//               const others = prevDevices.filter((d) => d.id !== updatedDevice.id);
+//               return [...others, updatedDevice];
+//             });
+//           }
+//         });
+
+//         unsubscribers.push(unsubscribeDevice);
+//       });
+
+//       setLoading(false);
+
+//       // Cleanup semua listener saat komponen unmount atau user ganti
+//       return () => {
+//         unsubscribers.forEach((unsub) => unsub());
+//       };
+//     });
+
+//     return () => unsubscribeUser();
+//   }, [user]);
+
+//   return { devices, loading };
+// }
+
+
+// GET DEVICES WITH FILTER OWNER AND SHARED
 export function useDevicesRealtime() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -309,35 +407,72 @@ export function useDevicesRealtime() {
   useEffect(() => {
     if (!user) return;
 
-    const userRef = doc(db, "users", user.uid);
-    const unsub = onSnapshot(userRef, async (snapshot) => {
-      const userData = snapshot.data() as UserModel | undefined;
-      if (!userData || !userData.devices || userData.devices.length === 0) {
-        setDevices([]);
-        setLoading(false);
-        return;
-      }
+    const devicesRef = collection(db, "devices");
 
-      // Ambil data devices berdasarkan ID yang tersimpan
-      const devicePromises = userData.devices.map(async (deviceId) => {
-        const deviceSnap = await getDoc(doc(db, "devices", deviceId));
-        if (deviceSnap.exists()) {
-          return { id: deviceSnap.id, ...deviceSnap.data() } as Device;
+    const unsubscribe = onSnapshot(devicesRef, (snapshot) => {
+      const userDevices: Device[] = [];
+
+      snapshot.forEach((docSnap) => {
+        const data = docSnap.data();
+        const device = { id: docSnap.id, ...data } as Device;
+
+        // Filter: apakah user adalah owner atau ada di sharedWith
+        const isOwner = device.owner === user.uid;
+        const isShared = Array.isArray(device.sharedWith) && device.sharedWith.includes(user.uid);
+
+        if (isOwner || isShared) {
+          userDevices.push(device);
         }
-        return null;
       });
 
-      const deviceResults = await Promise.all(devicePromises);
-      const filtered = deviceResults.filter((d): d is Device => d !== null);
-
-      setDevices(filtered);
+      setDevices(userDevices);
       setLoading(false);
     });
 
-    return () => unsub();
+    return () => unsubscribe();
   }, [user]);
 
   return { devices, loading };
+}
+
+export function useSharedUsers(uids: string[]) {
+  const [users, setUsers] = useState<SharedUser[]>([]);
+  const [loadingUsers, setLoading] = useState(true);
+
+  useEffect(() => {
+
+    if (!uids || uids.length === 0) {
+      setUsers([]);
+      setLoading(false);
+      return;
+    }
+
+    const fetchUsers = async () => {
+      const userData: SharedUser[] = [];
+
+      await Promise.all(
+        uids.map(async (uid) => {
+          const userRef = doc(db, "users", uid);
+          const snap = await getDoc(userRef);
+          if (snap.exists()) {
+            const data = snap.data();
+            userData.push({
+              uid,
+              name: data.name ?? "Tidak diketahui",
+              email: data.email ?? "-",
+            });
+          }
+        })
+      );
+
+      setUsers(userData);
+      setLoading(false);
+    };
+
+    fetchUsers();
+  }, [uids]);
+
+  return { users, loadingUsers };
 }
 
 
@@ -419,29 +554,82 @@ export function useDevicesRealtime() {
 //   }
 // };
 
+// export const addDeviceToUser = async (
+//   deviceCode: string
+// ): Promise<{ success: boolean; message: string }> => {
+//   const currentUser = auth.currentUser;
+//   if (!currentUser) {
+//     return { success: false, message: "User belum login" };
+//   }
+
+//   const userRef = doc(db, "users", currentUser.uid);
+//   const deviceRef = doc(db, "devices", deviceCode);
+
+//   const userDoc = await getDocument<UserModel>("users", currentUser.uid);
+//   if (userDoc?.devices.includes(deviceCode)) {
+//     return { success: false, message: "Device sudah ditambahkan" };
+//   }
+
+//   try {
+//     // Tambahkan deviceCode ke array devices milik user
+//     await updateDoc(userRef, {
+//       devices: arrayUnion(deviceCode),
+//     });
+
+//     // Ambil informasi device
+//     const deviceSnap = await getDoc(deviceRef);
+//     if (!deviceSnap.exists()) {
+//       return { success: false, message: "Device tidak ditemukan" };
+//     }
+
+//     const deviceData = deviceSnap.data();
+//     const isOwnerExists = !!deviceData.owner;
+
+//     if (!isOwnerExists) {
+//       // Jika belum ada owner, tetapkan current user sebagai owner
+//       await updateDoc(deviceRef, {
+//         owner: currentUser.uid,
+//         sharedWith: [], // inisialisasi sharedWith kosong
+//       });
+//     } else if (deviceData.owner !== currentUser.uid) {
+//       // Jika bukan owner, tambahkan ke sharedWith jika belum ada
+//       const sharedWith: string[] = deviceData.sharedWith || [];
+//       if (!sharedWith.includes(currentUser.uid)) {
+//         await updateDoc(deviceRef, {
+//           sharedWith: arrayUnion(currentUser.uid),
+//         });
+//       }
+//     }
+
+//     return { success: true, message: "Device berhasil ditambahkan" };
+//   } catch (error) {
+//     console.error("Gagal menambahkan device:", error);
+//     return {
+//       success: false,
+//       message: error instanceof Error ? error.message : String(error),
+//     };
+//   }
+// };
+
 export const addDeviceToUser = async (
-  deviceCode: string
+  deviceCode: string,
+  existingDeviceIds: string[] // Dikirim dari front-end (state devices)
 ): Promise<{ success: boolean; message: string }> => {
   const currentUser = auth.currentUser;
   if (!currentUser) {
     return { success: false, message: "User belum login" };
   }
 
-  const userRef = doc(db, "users", currentUser.uid);
+  // const userRef = doc(db, "users", currentUser.uid);
   const deviceRef = doc(db, "devices", deviceCode);
 
-  const userDoc = await getDocument<UserModel>("users", currentUser.uid);
-  if (userDoc?.devices.includes(deviceCode)) {
+  // Cek apakah deviceCode sudah ada dalam state dari frontend
+  if (existingDeviceIds.includes(deviceCode)) {
     return { success: false, message: "Device sudah ditambahkan" };
   }
 
   try {
-    // Tambahkan deviceCode ke array devices milik user
-    await updateDoc(userRef, {
-      devices: arrayUnion(deviceCode),
-    });
-
-    // Ambil informasi device
+    // Ambil informasi device dari Firestore
     const deviceSnap = await getDoc(deviceRef);
     if (!deviceSnap.exists()) {
       return { success: false, message: "Device tidak ditemukan" };
@@ -454,10 +642,10 @@ export const addDeviceToUser = async (
       // Jika belum ada owner, tetapkan current user sebagai owner
       await updateDoc(deviceRef, {
         owner: currentUser.uid,
-        sharedWith: [], // inisialisasi sharedWith kosong
+        sharedWith: [], // Inisialisasi sharedWith kosong
       });
     } else if (deviceData.owner !== currentUser.uid) {
-      // Jika bukan owner, tambahkan ke sharedWith jika belum ada
+      // Jika user bukan pemilik, tambahkan ke sharedWith jika belum ada
       const sharedWith: string[] = deviceData.sharedWith || [];
       if (!sharedWith.includes(currentUser.uid)) {
         await updateDoc(deviceRef, {
@@ -475,6 +663,7 @@ export const addDeviceToUser = async (
     };
   }
 };
+
 
 
 // export const removeDeviceFromUser = async (deviceCode: string): Promise<{ success: boolean; message: string }> => {
@@ -530,3 +719,121 @@ export const removeDeviceFromUser = async (
     };
   }
 };
+
+// export function LastUpdated({ timestamp, deviceId }: { timestamp: Timestamp, deviceId: string }) {
+//   const [label, setLabel] = useState("");
+
+//   useEffect(() => {
+//     const now = dayjs();
+//     const time = dayjs(timestamp.toDate());
+//     const diffMinutes = now.diff(time, "minute");
+//     const diffHours = now.diff(time, "hour");
+//     const diffDays = now.diff(time, "day");
+
+//     if (diffDays >= 3) {
+//       setLabel(time.format("D MMMM YYYY | HH:mm"));
+//     } else if (diffDays >= 1) {
+//       setLabel(`${diffDays} hari lalu`);
+//     } else if (diffHours >= 1) {
+//       setLabel(`${diffHours} jam lalu`);
+//     } else {
+//       setLabel(`${diffMinutes} menit lalu`);
+//     }
+
+//     if (diffMinutes >= 2) {
+//       const ref = doc(db, "devices", deviceId);
+//       updateDoc(ref, {
+//         status: false,
+//       }).then(() => {
+//         console.log("Status updated to false due to inactivity");
+//       }).catch((err) => {
+//         console.error("Update failed:", err);
+//       });
+//     }
+//   }, [timestamp, deviceId]);
+
+//   return label;
+// }
+
+export function LastUpdated({
+  timestamp,
+  deviceId,
+}: {
+  timestamp: Timestamp | { seconds: number; nanoseconds: number };
+  deviceId: string;
+}) {
+  const [label, setLabel] = useState("");
+
+  useEffect(() => {
+    let timeObj: Date;
+    
+    if (typeof (timestamp as Timestamp).toDate === "function") {
+      timeObj = (timestamp as Timestamp).toDate();
+    } else {
+      // fallback manual jika bukan Timestamp instance
+      const { seconds, nanoseconds } = timestamp as { seconds: number; nanoseconds: number };
+      timeObj = new Date(seconds * 1000 + Math.floor(nanoseconds / 1e6));
+    }
+
+    // console.log(timeObj);
+
+    const now = dayjs();
+    const time = dayjs(timeObj);
+    const diffMinutes = now.diff(time, "minute");
+    const diffHours = now.diff(time, "hour");
+    const diffDays = now.diff(time, "day");
+
+    if (diffDays >= 3) {
+      setLabel(time.format("D MMMM YYYY | HH:mm"));
+    } else if (diffDays >= 1) {
+      setLabel(`${diffDays} hari lalu`);
+    } else if (diffHours >= 1) {
+      setLabel(`${diffHours} jam lalu`);
+    } else {
+      setLabel(`${diffMinutes} menit lalu`);
+    }
+
+    if (diffMinutes >= 2) {
+      const ref = doc(db, "devices", deviceId);
+      updateDoc(ref, {
+        status: false,
+      }).then(() => {
+        console.log("Status updated to false due to inactivity");
+      }).catch((err) => {
+        console.error("Update failed:", err);
+      });
+    }
+  }, [timestamp, deviceId]);
+
+  return label;
+}
+
+export async function removeUserFromSharedWith(
+  deviceId: string,
+  userId: string,
+  // setDevices: React.Dispatch<React.SetStateAction<Device[]>>
+): Promise<{ success: boolean; message: string }> {
+  try {
+    const deviceRef = doc(db, "devices", deviceId);
+    await updateDoc(deviceRef, {
+      sharedWith: arrayRemove(userId),
+    });
+
+    // setDevices((prevDevices) =>
+    //   prevDevices.map((device) =>
+    //     device.id === deviceId
+    //       ? {
+    //           ...device,
+    //           sharedWith: device.sharedWith?.filter((uid) => uid !== userId) || [],
+    //         }
+    //       : device
+    //   )
+    // );
+
+    // console.log(`User ${userId} removed from sharedWith on device ${deviceId}`);
+    return { success: true, message: "Berhasil menghapus pengguna" };
+  } catch (error) {
+    console.error("Gagal menghapus pengguna dari daftar bagikan:", error);
+    return { success: false, message: error instanceof Error ? error.message : String(error) };
+  }
+}

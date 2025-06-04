@@ -60,7 +60,7 @@ export default function MasukPage() {
   return (
     <>
       <div className="flex justify-center items-center bg-transparent pt-3 pb-4 absolute w-full lg:mx-auto h-full">
-        <div className="grow lg:grow-0 lg:w-fit px-3 lg:mx-auto">
+        <div className="grow lg:grow-0 lg:w-fit px-4 lg:mx-auto">
           <form
             onSubmit={(e) => {
               e.preventDefault(); // mencegah reload halaman
@@ -88,6 +88,7 @@ export default function MasukPage() {
                 placeholder="Email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                autoFocus={email === ""}
                 className="flex-1 bg-white/0 outline-none text-sm placeholder:text-muted-foreground"
               />
             </div>
@@ -133,6 +134,7 @@ export default function MasukPage() {
               className={`w-full text-white py-2 text-sm rounded-lg mt-8 flex justify-center items-center ${email && password ? "bg-primary hover:bg-emerald-600 shadow-lg shadow-primary hover:shadow-none cursor-pointer transition-all duration-200" : "bg-muted-foreground/50 cursor-not-allowed"
                 }`}
               disabled={!email || !password}
+              autoFocus={email !== "" && password !== ""}
             >
               {loadingButton ? (
                 <svg
@@ -164,7 +166,7 @@ export default function MasukPage() {
                 Belum memiliki akun?{" "}
                 <Link
                   href="/daftar"
-                  className="text-emerald-600 hover:underline"
+                  className="text-emerald-600 hover:underline text-shadow-2xs"
                 >
                   Daftar
                 </Link>
@@ -173,8 +175,8 @@ export default function MasukPage() {
           </form>
         </div>
       </div>
-      <div className="grid grid-cols-3 relative -z-10">
-        <div className="relative -z-10 w-full h-full">
+      <div className="grid grid-cols-1 lg:grid-cols-3 relative -z-10">
+        <div className="relative -z-10 w-full h-full hidden lg:block">
           <Image
             src="/seed.jpg"
             alt="login background"
@@ -183,7 +185,7 @@ export default function MasukPage() {
             priority
           />
         </div>
-        <div className="relative -z-10 w-full h-full">
+        <div className="relative -z-10 w-full h-full hidden lg:block">
           <Image
             src="/seeds.jpg"
             alt="login background"

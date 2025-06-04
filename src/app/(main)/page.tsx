@@ -18,24 +18,30 @@ import AddDeviceDialog from "@/components/AddDeviceDialog";
 
 export default function DashboardPage() {
   const { devices, loading } = useDevicesRealtime();
-  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  // const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const currentUser = auth.currentUser
 
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [activeTab, setActiveTab] = useState<"owned" | "shared">("owned");
+
+  // Filter perangkat saat render
+  const ownedDevices = devices.filter(device => device.owner === currentUser?.uid);
+  const sharedDevices = devices.filter(device => currentUser?.uid !== undefined && device.sharedWith?.includes(currentUser.uid));
+  const visibleDevices: Device[] = activeTab === "owned" ? ownedDevices : sharedDevices;
+
+  // Set selectedDevice saat tab atau devices berubah
   useEffect(() => {
-    if (devices.length > 0) {
-      setSelectedDevice(devices[0] || null);
+    if (visibleDevices.length > 0) {
+      setSelectedDevice(visibleDevices[0]);
+    } else {
+      setSelectedDevice(null);
     }
-    // console.log(devices);
-  }, [devices]);
+  }, [activeTab, devices, visibleDevices]);
 
-
-  useEffect(() => {
-    // showToast({ message: "Berhasil mengubah peraturan", Icon: <CircleCheck className={"text-primary"} /> })
-  }, [])
 
   if (loading) {
     return (
-      <main className="bg-radial-[at_50%_75%] from-emerald-200 via-sky-100 to-[#d7d9db] to-90% py-8">
+      <main className="bg-main py-8">
         <div className="container mx-auto min-h-screen flex items-center justify-center">
           <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-emerald-400"></div>
         </div>
@@ -43,13 +49,15 @@ export default function DashboardPage() {
     );
   }
 
+  console.log("devices", devices);
+  console.log("visibleDevices", visibleDevices);
 
 
   return (
-    <main className="min-h-screen bg-radial-[at_50%_75%] from-emerald-200 via-sky-100 to-[#d7d9db] to-90% py-8">
+    <main className="min-h-screen bg-main py-8">
       {/* <main className="bg-radial-[at_50%_75%] from-[#b3beda] to-[#d7d9db] to-90% py-8"> */}
       {/* <main className="bg-linear-to-b from-[#dbdbdb] to-[#b3beda]"> */}
-      <div className="container mx-auto mt-20 lg:mt-24 mb-16 lg:mb-8">
+      <div className="container mx-auto mt-20 lg:mt-24 lg:mb-8">
         {devices && devices.length === 0 && selectedDevice == null
           ?
           <div className="grow flex flex-col gap-4 items-center px-3 lg:px-8 py-12 mx-2 glass rounded-4xl text-center text-muted-foreground">
@@ -62,7 +70,7 @@ export default function DashboardPage() {
               className="opacity-70 mb-4"
             />
             <p className="">Tidak ada perangkat ditemukan</p>
-            <AddDeviceDialog>
+            <AddDeviceDialog devices={devices}>
               <Button>
                 <Plus className="text-white" strokeWidth={3} />Perangkat
               </Button>
@@ -72,17 +80,36 @@ export default function DashboardPage() {
           // LAYOUT CONTAINER
           <div className="flex flex-col lg:flex-row items-start gap-4 w-full">
             <Sidebar />
-            <div className="grow w-full lg:w-fit px-1 lg:px-0">
-              <div className="flex items-center gap-4 ml-8">
-                <Button variant={"dark"} className="rounded-full">Perangkat Anda</Button>
-                <Button variant={"glass"} className="rounded-full">Dibagikan</Button>
+            <div className="grow w-full lg:w-fit px-2 lg:px-0">
+              <div className="flex items-center gap-4 ">
+                <div className="flex gap-2 mb-4">
+                  {ownedDevices.length > 0 &&
+                    <Button
+                      variant={activeTab === "owned" ? "dark" : "glass"}
+                      className="rounded-full"
+                      onClick={() => setActiveTab("owned")}
+                    >
+                      Perangkat Anda
+                    </Button>
+                  }
+                  {sharedDevices.length > 0 &&
+                    <Button
+                      variant={activeTab === "shared" ? "dark" : "glass"}
+                      className="rounded-full"
+                      onClick={() => setActiveTab("shared")}
+                    >
+                      Dibagikan
+                    </Button>
+                  }
+                </div>
+
               </div>
               <div className="px-3 lg:px-8 py-6 lg:mx-2 mt-4 glass rounded-4xl relative w-full">
                 {/* DEVICES TAB */}
                 <div className="absolute top-0 right-1/2 lg:right-0 translate-x-1/2 lg:translate-x-0">
                   <div className="relative bg-white/10 pt-3 pb-4 px-6 rounded-b-4xl lg:rounded-br-none lg:rounded-bl-4xl lg:rounded-tr-4xl border border-white/60">
                     <div className="flex items-center gap-6">
-                      {devices?.map((device, index) => (
+                      {visibleDevices?.map((device, index) => (
                         <Button
                           key={device.id}
                           onClick={() => setSelectedDevice(device)}
@@ -92,7 +119,7 @@ export default function DashboardPage() {
                           {index + 1}
                         </Button>
                       ))}
-                      <AddDeviceDialog>
+                      <AddDeviceDialog devices={devices}>
                         <Button variant={"outline"} className="flex items-center justify-center size-12 rounded-full cursor-pointer transition-all border border-ring/60 bg-transparent">
                           <Plus className="size-4 text-secondary-foreground" />
                         </Button>
@@ -144,7 +171,7 @@ export default function DashboardPage() {
                       <span className="text-xs">Terakhir diperbarui:</span>
                       <span className="text-sm font-semibold">
                         <LastUpdated
-                          timestamp={selectedDevice?.latestReading?.timestamp?.toString() || ""}
+                          timestamp={selectedDevice?.latestReading?.timestamp ?? new Date(0) as unknown as import("firebase/firestore").Timestamp}
                           deviceId={selectedDevice?.id || ""}
                         />
                       </span>
@@ -154,7 +181,8 @@ export default function DashboardPage() {
                       <span className="text-xs">Terakhir diperbarui:</span>
                       <span className="text-sm font-semibold">
                         <LastUpdated
-                          timestamp={selectedDevice?.latestReading?.timestamp?.toString() || ""}
+                          timestamp={selectedDevice?.latestReading?.timestamp ?? new Date(0) as unknown as import("firebase/firestore").Timestamp}
+                          // timestamp={selectedDevice?.latestReading?.timestamp}
                           deviceId={selectedDevice?.id || ""}
                         />
                       </span>
@@ -174,7 +202,7 @@ export default function DashboardPage() {
                       </div>
                       <Gauge
                         minValue={0}
-                        value={Math.floor(selectedDevice?.latestReading?.TDS || NaN)}
+                        value={Math.floor(selectedDevice?.latestReading?.TDS || 0)}
                         maxValue={1100}
                         ticks={[
                           { value: 700 },
@@ -198,7 +226,7 @@ export default function DashboardPage() {
                       </div>
                       <Gauge
                         minValue={4}
-                        value={floorToOneDecimal(selectedDevice?.latestReading?.water_pH)}
+                        value={floorToOneDecimal(selectedDevice?.latestReading?.water_pH || 0)}
                         maxValue={9}
                         ticks={[
                           { value: 6 },
@@ -225,7 +253,7 @@ export default function DashboardPage() {
                       </div>
                       <Gauge
                         minValue={14}
-                        value={floorToOneDecimal(selectedDevice?.latestReading?.water_temp)}
+                        value={floorToOneDecimal(selectedDevice?.latestReading?.water_temp || 0)}
                         maxValue={30}
                         ticks={[
                           { value: 17 },
@@ -249,7 +277,7 @@ export default function DashboardPage() {
                       </div>
                       <Gauge
                         minValue={30}
-                        value={Math.floor(selectedDevice?.latestReading?.water_level || NaN)}
+                        value={Math.floor(selectedDevice?.latestReading?.water_level || 0)}
                         maxValue={100}
                         ticks={[
                           { value: 40 },
@@ -274,7 +302,7 @@ export default function DashboardPage() {
                         </div>
                         <Gauge
                           minValue={14}
-                          value={selectedDevice?.latestReading?.air_temp}
+                          value={selectedDevice?.latestReading?.air_temp || 0}
                           maxValue={32}
                           ticks={[
                             { value: 17 },
@@ -299,7 +327,7 @@ export default function DashboardPage() {
                         </div>
                         <Gauge
                           minValue={30}
-                          value={Math.floor(selectedDevice?.latestReading?.air_humidity || NaN)}
+                          value={Math.floor(selectedDevice?.latestReading?.air_humidity || 0)}
                           maxValue={100}
                           ticks={[
                             { value: 50 },

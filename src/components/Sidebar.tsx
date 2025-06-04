@@ -18,7 +18,7 @@ export default function Sidebar() {
 
   const pathname = usePathname();
   return (
-    <ul className="hidden lg:flex lg:flex-col gap-5 sticky top-0 pt-4">
+    <ul className="hidden lg:flex lg:flex-col gap-5 sticky top-0 pt-4 mt-13">
       {menuItems.map(({ href, label, urlPathname, icon }) => {
         const isActive = pathname.split('/')[1] === urlPathname;
         return (

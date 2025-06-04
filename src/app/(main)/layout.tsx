@@ -43,7 +43,7 @@ export default function RootLayout({
   if (loading) {
     return (
       <body className={`${inter.variable} ${manrope.variable} antialiased`}>
-        <main className="bg-radial-[at_50%_75%] from-emerald-200 via-sky-100 to-[#d7d9db] to-90% py-8">
+        <main className="bg-main py-8">
           <div className="container mx-auto min-h-screen flex items-center justify-center">
             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-emerald-400"></div>
           </div>

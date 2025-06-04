@@ -53,6 +53,7 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
   /* --primary: oklch(0.208 0.042 265.755); */
+  /* #0f172b */
   --primary: oklch(69.6% 0.17 162.48);
   /* #00bc7d */
   --primary-foreground: oklch(0.984 0.003 247.858);
@@ -122,6 +123,10 @@
 
   body {
     @apply bg-background text-foreground font-sans;
+  }
+
+  .bg-main {
+    @apply bg-radial-[at_50%_75%] from-emerald-100 via-sky-100 to-[#d7d9db] to-90%
   }
 
   input:-webkit-autofill,
