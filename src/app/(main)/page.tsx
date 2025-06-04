@@ -73,7 +73,11 @@ export default function DashboardPage() {
           <div className="flex flex-col lg:flex-row items-start gap-4 w-full">
             <Sidebar />
             <div className="grow w-full lg:w-fit px-1 lg:px-0">
-              <div className="px-3 lg:px-8 py-6 lg:mx-2 mt-4 glass rounded-4xl relative w-full lg:w-fit">
+              <div className="flex items-center gap-4 ml-8">
+                <Button variant={"dark"} className="rounded-full">Perangkat Anda</Button>
+                <Button variant={"glass"} className="rounded-full">Dibagikan</Button>
+              </div>
+              <div className="px-3 lg:px-8 py-6 lg:mx-2 mt-4 glass rounded-4xl relative w-full">
                 {/* DEVICES TAB */}
                 <div className="absolute top-0 right-1/2 lg:right-0 translate-x-1/2 lg:translate-x-0">
                   <div className="relative bg-white/10 pt-3 pb-4 px-6 rounded-b-4xl lg:rounded-br-none lg:rounded-bl-4xl lg:rounded-tr-4xl border border-white/60">

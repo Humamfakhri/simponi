@@ -77,7 +77,7 @@ export default function MasukPage() {
                 <p>Sistem Monitoring Hidroponik Indoor</p>
               </div>
             </div>
-            <div className="flex items-center gap-1 border border-input/30 rounded-md px-3 py-2 w-full bg-white/20 focus-within:ring-2 focus-within:ring-ring focus-within:outline-none">
+            <div className="flex items-center gap-1 border border-input/30 rounded-md px-3 py-2 w-full bg-white/20 focus-within:ring-2 focus-within:ring-primary focus-within:outline-none">
               <Mail
                 strokeWidth={2}
                 width={20}
@@ -91,7 +91,7 @@ export default function MasukPage() {
                 className="flex-1 bg-white/0 outline-none text-sm placeholder:text-muted-foreground"
               />
             </div>
-            <div className="flex items-center gap-1 border border-input/30 rounded-md px-3 py-2 w-full bg-white/20 focus-within:ring-2 focus-within:ring-ring focus-within:outline-none">
+            <div className="flex items-center gap-1 border border-input/30 rounded-md px-3 py-2 w-full bg-white/20 focus-within:ring-2 focus-within:ring-primary focus-within:outline-none">
               <LockKeyhole
                 strokeWidth={2}
                 width={20}

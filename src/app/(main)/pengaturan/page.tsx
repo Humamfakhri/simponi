@@ -43,7 +43,7 @@ export default function PengaturanPage() {
 
   useEffect(() => {
     if (devices.length > 0) {
-      setSelectedDevice(devices[0] || null); // pilih device pertama secara default
+      setSelectedDevice(devices[0] || null);
       setDeviceName(devices[0].name || "");
       setDeviceLocation(devices[0].location || "");
     }
@@ -64,8 +64,14 @@ export default function PengaturanPage() {
     try {
       const result = await removeDeviceFromUser(selectedDevice.id);
       if (result.success) {
-        router.push("/");
         showToast({ message: "Berhasil menghapus perangkat", variant: "success" });
+        // console.log(selectedDevice);
+        // console.log(devices.length);
+        
+        // harusnya 0
+        if (devices.length === 1) {
+          router.push("/");
+        }
       }
     } catch (error) {
       showToast({ message: "Gagal menghapus perangkat", variant: "error" });
@@ -219,6 +225,7 @@ export default function PengaturanPage() {
             </div> {/* END OF GLASS CONTAINER */}
             <div className={`glass-container ${isOwner ? "flex" : "hidden"} flex-col items-start gap-4 ${selectedDevice?.isShareable && !isOwner && "text-muted-foreground"}`}>
               <h1 className='text-lg lg:text-xl font-black font-heading'>Konfigurasi Parameter</h1>
+
             </div>
 
             {/* BAGIKAN AKSES */}
