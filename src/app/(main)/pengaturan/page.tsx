@@ -37,6 +37,7 @@ export default function PengaturanPage() {
   const isOwner = currentUser?.uid === selectedDevice?.owner;
   const [deviceName, setDeviceName] = useState(selectedDevice?.name || "");
   const [deviceLocation, setDeviceLocation] = useState(selectedDevice?.location || "");
+  const [loadingUpdate, setLoadingUpdate] = useState("")
 
   const router = useRouter();
 
@@ -92,6 +93,31 @@ export default function PengaturanPage() {
       }
     } catch (error) {
       console.error("Gagal menyalin:", error);
+    }
+  };
+
+  const handleSimpan = async (field: string, value: string) => {
+    if (!selectedDevice) return;
+
+    if (field === "name") {
+      setLoadingUpdate("name");
+    } else if (field === "location") {
+      setLoadingUpdate("location");
+    }
+
+    try {
+      const result = await updateDocument("devices", selectedDevice?.id, {
+        field: value,
+      });
+      if (result) {
+        showToast({ message: "Berhasil menyimpan perubahan", variant: "success" });
+      } else {
+        showToast({ message: "Gagal menyimpan perubahan", variant: "error" });
+      }
+    } catch (error) {
+      console.error("Gagal menyimpan perubahan", error);
+    } finally {
+      setLoadingUpdate("");
     }
   };
 
@@ -303,7 +329,31 @@ export default function PengaturanPage() {
                 <div className="bg-white/10 border border-white/60 border-t-0 px-6 py-3 rounded-b-2xl">
                   <div className="flex items-center justify-between">
                     <p className="text-xs lg:text-sm text-muted-foreground">Mohon gunakan minimal 1 karakter.</p>
-                    <Button className=''>Simpan</Button>
+                    <Button disabled={deviceName.length < 1 || loadingUpdate == "name"} onClick={() => handleSimpan("name", deviceName)}>
+                      {loadingUpdate == "name" &&
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          ></path>
+                        </svg>
+                      }
+                      Simpan
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -318,7 +368,31 @@ export default function PengaturanPage() {
                 <div className="bg-white/10 border border-white/60 border-t-0 px-6 py-3 rounded-b-2xl">
                   <div className="flex items-center justify-between">
                     <p className="text-xs lg:text-sm text-muted-foreground">Mohon gunakan minimal 1 karakter.</p>
-                    <Button className=''>Simpan</Button>
+                    <Button disabled={deviceLocation.length < 1 || loadingUpdate == "location"} onClick={() => handleSimpan("location", deviceLocation)}>
+                      {loadingUpdate == "location" &&
+                        <svg
+                          className="animate-spin h-5 w-5 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                          ></path>
+                        </svg>
+                      }
+                      Simpan
+                    </Button>
                   </div>
                 </div>
               </div>
