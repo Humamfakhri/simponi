@@ -129,28 +129,26 @@ export default function DashboardPage() {
           <div className="flex flex-col lg:flex-row items-start gap-4 w-full">
             <Sidebar />
             <div className="grow w-full lg:w-fit px-2 lg:px-0">
-              <div className="flex items-center gap-4 ">
-                <div className="flex gap-2 mb-4">
-                  {ownedDevices.length > 0 &&
-                    <Button
-                      variant={activeTab === "owned" ? "dark" : "glass"}
-                      className="rounded-full"
-                      onClick={() => setActiveTab("owned")}
-                    >
-                      Perangkat Anda
-                    </Button>
-                  }
-                  {sharedDevices.length > 0 &&
-                    <Button
-                      variant={activeTab === "shared" ? "dark" : "glass"}
-                      className="rounded-full"
-                      onClick={() => setActiveTab("shared")}
-                    >
-                      Dibagikan
-                    </Button>
-                  }
-                </div>
-
+              {/* <h1 className="text-4xl font-bold mb-7">Dashboard</h1> */}
+              <div className="flex gap-2 mb-6">
+                {ownedDevices.length > 0 &&
+                  <Button
+                    variant={activeTab === "owned" ? "dark" : "glass"}
+                    className="rounded-full"
+                    onClick={() => setActiveTab("owned")}
+                  >
+                    Perangkat Anda
+                  </Button>
+                }
+                {sharedDevices.length > 0 &&
+                  <Button
+                    variant={activeTab === "shared" ? "dark" : "glass"}
+                    className="rounded-full"
+                    onClick={() => setActiveTab("shared")}
+                  >
+                    Dibagikan
+                  </Button>
+                }
               </div>
               <div className="px-3 lg:px-8 py-6 lg:mx-2 mt-4 glass rounded-4xl relative w-full">
                 {/* DEVICES TAB */}

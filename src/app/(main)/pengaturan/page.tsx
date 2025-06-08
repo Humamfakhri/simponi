@@ -25,9 +25,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { auth, removeDeviceFromUser, removeUserFromSharedWith, updateDocument, useDevicesRealtime, useSharedUsers } from "@/lib/firebase";
-import { Device } from "@/model/Device";
-import { CircleMinus, Copy, Info, MapPin, Plus, UserCircle2 } from "lucide-react";
+import { Device, SensorConfig } from "@/model/Device";
+import { CircleHelp, CircleMinus, Copy, Info, MapPin, Plus, UserCircle2 } from "lucide-react";
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
@@ -41,9 +42,12 @@ export default function PengaturanPage() {
   const visibleDevices = activeTab === "owned" ? ownedDevices : sharedDevices;
 
   const [isShareable, setIsShareable] = useState<boolean>(selectedDevice?.isShareable || false);
+  const [isDebug, setIsDebug] = useState<boolean>(selectedDevice?.isDebug || false);
+  const [sensorConfig, setSensorConfig] = useState<SensorConfig | null>(selectedDevice?.sensorConfig || null);
   const isOwner = currentUser?.uid === selectedDevice?.owner;
   const [deviceName, setDeviceName] = useState(selectedDevice?.name || "");
   const [deviceLocation, setDeviceLocation] = useState(selectedDevice?.location || "");
+  const [deviceNote, setDeviceNote] = useState(selectedDevice?.note || "");
   const [loadingUpdate, setLoadingUpdate] = useState("")
   // const { users, loadingUsers } = useSharedUsers(selectedDevice?.sharedWith || []);
   const uids = useMemo(() => selectedDevice?.sharedWith || [], [selectedDevice]);
@@ -99,9 +103,12 @@ export default function PengaturanPage() {
   useEffect(() => {
     if (selectedDevice) {
       setIsShareable(selectedDevice.isShareable);
+      setIsDebug(selectedDevice.isDebug);
+      setSensorConfig(selectedDevice.sensorConfig);
       setDeviceName(selectedDevice.name || "");
       setDeviceLocation(selectedDevice.location || "");
     }
+    console.log(selectedDevice?.sensorConfig);
   }, [selectedDevice]);
 
 
@@ -166,23 +173,48 @@ export default function PengaturanPage() {
         setIsShareable(!isShareable);
       }
     } catch (error) {
-      console.error("Gagal menyalin:", error);
+      console.error("Gagal mengubah mode bagikan:", error);
     }
   };
 
-  const handleSimpan = async (field: string, value: string) => {
+  const handleToggleDebug = async () => {
+    if (!selectedDevice) return;
+    try {
+      const result = await updateDocument("devices", selectedDevice?.id, {
+        isDebug: !isDebug,
+      });
+      if (result) {
+        setIsDebug(!isDebug);
+      }
+    } catch (error) {
+      console.error("Gagal mengubah mode:", error);
+    }
+  };
+
+  const handleSimpan = async (
+    field: string,
+    value: string | number,
+    sensorConfig: boolean = false
+  ) => {
     if (!selectedDevice) return;
 
-    if (field === "name") {
-      setLoadingUpdate("name");
-    } else if (field === "location") {
-      setLoadingUpdate("location");
+    const loadingFields = ["name", "location", "TDS_offset_voltage", "note", "ph4", "ph7", "ph9", "water_level_height"];
+    if (loadingFields.includes(field)) {
+      setLoadingUpdate(field);
     }
 
     try {
-      const result = await updateDocument("devices", selectedDevice?.id, {
-        field: value,
-      });
+      let result = false;
+      if (sensorConfig) {
+        result = await updateDocument("devices", selectedDevice.id, {
+          [`sensorConfig.${field}`]: value,
+        });
+      } else {
+        result = await updateDocument("devices", selectedDevice.id, {
+          [field]: value,
+        });
+      }
+
       if (result) {
         showToast({ message: "Berhasil menyimpan perubahan", variant: "success" });
       } else {
@@ -194,6 +226,7 @@ export default function PengaturanPage() {
       setLoadingUpdate("");
     }
   };
+
 
   if (loading) {
     return (
@@ -313,9 +346,310 @@ export default function PengaturanPage() {
                 </div>
               </div>
             </div> {/* END OF GLASS CONTAINER */}
+            {/* CATATAN */}
             <div className={`glass-container ${isOwner ? "flex" : "hidden"} flex-col items-start gap-4 ${selectedDevice?.isShareable && !isOwner && "text-muted-foreground"}`}>
-              <h1 className='text-lg lg:text-xl font-black font-heading'>Konfigurasi Parameter</h1>
+              <div className='header-text flex flex-col gap-2'>
+                <h1 className='text-lg lg:text-xl font-black font-heading'>Catatan Anda</h1>
+                <p className='text-muted-foreground text-sm'>Catat informasi penting yang Anda perlukan dan akses kapanpun.</p>
+              </div>
+              <Textarea className='bg-white/60 border-white shadow-none text-sm rounded-xl' value={deviceNote} onChange={(e) => setDeviceNote(e.target.value)} id="lokasi" placeholder="Ketik di sini ..." />
+              <div className="flex items-center justify-end w-full">
+                <Button disabled={loadingUpdate == "note"} onClick={() => handleSimpan("note", deviceNote)}>
+                  {loadingUpdate == "note" &&
+                    <svg
+                      className="animate-spin h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      ></path>
+                    </svg>
+                  }
+                  Simpan
+                </Button>
+              </div>
+            </div>
 
+            {/* KONFIGURASI PARAMETER */}
+            <div className={`glass-container ${isOwner ? "flex" : "hidden"} flex-col items-start gap-4 ${selectedDevice?.isShareable && !isOwner && "text-muted-foreground"}`}>
+              <div className="flex items-center justify-between w-full mb-2">
+                <h1 className='text-lg lg:text-xl font-black font-heading'>Konfigurasi Parameter</h1>
+                <div className="flex items-center gap-1">
+                  <Switch className={`cursor-pointer ${isDebug ? "bg-primary" : "bg-input"}`} checked={isDebug} onClick={handleToggleDebug} />
+                  <span className='text-sm font-semibold text-foreground ml-1'>Mode Debug</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <CircleHelp className='size-4' />
+                    </TooltipTrigger>
+                    <TooltipContent sideOffset={5} className='flex flex-col gap-1' side='bottom' align='end'>
+                      <p>Digunakan untuk kalibrasi sensor yang membuat:</p>
+                      <p>perubahan data di Dashboard lebih intens (per detik),</p>
+                      <p>data lengkap sensor muncul di Serial Monitor perangkat,</p>
+                      <p>data tidak disimpan ke histori.</p>
+                      <Link href={'#'} className='text-primary'>Pelajari selengkapnya</Link>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+              <div className={`flex flex-col items-start gap-4`}>
+                {/* <div className={`flex flex-col items-start gap-4 ${!isDebug && 'opacity-50'}`}> */}
+                <div className='grid grid-cols-2 gap-4 max-w-fit'>
+                  <div className="bg-white/40 border border-white/60 rounded-lg lg:rounded-2xl rounded-b-none px-3 py-3 lg:px-6 lg:py-4 w-full max-w-[320px]">
+                    <div className="flex flex-col gap-1 mb-3">
+                      <h2 className='font-semibold'>TDS</h2>
+                      <p className='text-sm text-foreground/80 italic'>TDS Offset Voltage</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Input
+                          id="TDS_offset_voltage"
+                          type="number"
+                          disabled={!isDebug}
+                          placeholder="TDS Offset Voltage"
+                          value={sensorConfig?.TDS_offset_voltage ?? ""}
+                          onChange={(e) => {
+                            const newValue = parseFloat(e.target.value);
+                            setSensorConfig((prev) => prev ? { ...prev, TDS_offset_voltage: newValue } : null);
+                          }}
+                          className='bg-white/80 border-white max-w-[174px] shadow-none text-sm pr-16'
+                        />
+                        <Button disabled variant={"outline"} className='absolute top-0 right-0'>V</Button>
+                      </div>
+                      <Button disabled={!isDebug || sensorConfig?.TDS_offset_voltage == null || loadingUpdate == "TDS_offset_voltage"} onClick={() => sensorConfig?.TDS_offset_voltage !== undefined && handleSimpan("TDS_offset_voltage", sensorConfig.TDS_offset_voltage, true)}>
+                        {loadingUpdate == "TDS_offset_voltage" &&
+                          <svg
+                            className="animate-spin h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            ></path>
+                          </svg>
+                        }
+                        Simpan
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="bg-white/40 border border-white/60 rounded-lg lg:rounded-2xl rounded-b-none px-3 py-3 lg:px-6 lg:py-4 w-full max-w-[320px]">
+                    <div className="flex flex-col gap-1 mb-3">
+                      <h2 className='font-semibold'>Ketinggian Air</h2>
+                      <p className='text-sm text-foreground/80'>Jarak antara sensor dan alas tandon air</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Input
+                          id="water_level_height"
+                          type="number"
+                          disabled={!isDebug}
+                          placeholder="Ketinggian Air"
+                          value={sensorConfig?.water_level_height ?? ""}
+                          onChange={(e) => {
+                            const newValue = parseFloat(e.target.value);
+                            setSensorConfig((prev) => prev ? { ...prev, water_level_height: newValue } : null);
+                          }}
+                          className='bg-white/80 border-white max-w-[174px] shadow-none text-sm pr-16'
+                        />
+                        <Button variant={"outline"} disabled className='absolute top-0 right-0'>cm</Button>
+                      </div>
+                      <Button disabled={!isDebug || sensorConfig?.water_level_height == null || loadingUpdate == "water_level_height"} onClick={() => sensorConfig?.water_level_height !== undefined && handleSimpan("water_level_height", sensorConfig.water_level_height, true)}>
+                        {loadingUpdate == "water_level_height" &&
+                          <svg
+                            className="animate-spin h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            ></path>
+                          </svg>
+                        }
+                        Simpan
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-17 bg-white/40 border border-white/60 rounded-lg lg:rounded-2xl rounded-b-none px-3 py-3 lg:px-6 lg:py-4">
+                  <div className='w-full max-w-[265px]'>
+                    <div className="flex flex-col gap-1 mb-3">
+                      <h2 className='font-semibold'>pH</h2>
+                      <p className='text-sm text-foreground/80'>phVoltage saat <span className="font-bold">pH 4,01</span></p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Input
+                          id="ph4"
+                          type="number"
+                          disabled={!isDebug}
+                          placeholder="pH 4,01 Voltage"
+                          value={sensorConfig?.ph4 ?? ""}
+                          onChange={(e) => {
+                            const newValue = parseFloat(e.target.value);
+                            setSensorConfig((prev) => prev ? { ...prev, ph4: newValue } : null);
+                          }}
+                          className='bg-white/80 border-white max-w-[174px] shadow-none text-sm pr-16'
+                        />
+                        <Button variant={"outline"} disabled className='absolute top-0 right-0'>V</Button>
+                      </div>
+                      <Button disabled={!isDebug || sensorConfig?.ph4 == null || loadingUpdate == "ph4"} onClick={() => sensorConfig?.ph4 !== undefined && handleSimpan("ph4", sensorConfig.ph4, true)}>
+                        {loadingUpdate == "ph4" &&
+                          <svg
+                            className="animate-spin h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            ></path>
+                          </svg>
+                        }
+                        Simpan
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex flex-col gap-1 mb-3">
+                      <h2 className='font-semibold invisible'>pH</h2>
+                      <p className='text-sm text-foreground/80'>phVoltage saat <span className="font-bold">pH 6,86</span></p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Input
+                          id="ph7"
+                          type="number"
+                          disabled={!isDebug}
+                          placeholder="pH 6,86 Voltage"
+                          value={sensorConfig?.ph7 ?? ""}
+                          onChange={(e) => {
+                            const newValue = parseFloat(e.target.value);
+                            setSensorConfig((prev) => prev ? { ...prev, ph7: newValue } : null);
+                          }}
+                          className='bg-white/80 border-white max-w-[174px] shadow-none text-sm pr-16'
+                        />
+                        <Button variant={"outline"} disabled className='absolute top-0 right-0'>V</Button>
+                      </div>
+                      <Button disabled={!isDebug || sensorConfig?.ph7 == null || loadingUpdate == "ph7"} onClick={() => sensorConfig?.ph7 !== undefined && handleSimpan("ph7", sensorConfig.ph7, true)}>
+                        {loadingUpdate == "ph7" &&
+                          <svg
+                            className="animate-spin h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            ></path>
+                          </svg>
+                        }
+                        Simpan
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex flex-col gap-1 mb-3">
+                      <h2 className='font-semibold invisible'>pH</h2>
+                      <p className='text-sm text-foreground/80'>phVoltage saat <span className="font-bold">pH 9,18</span></p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <Input
+                          id="ph9"
+                          type="number"
+                          disabled={!isDebug}
+                          placeholder="pH 9,18 Voltage"
+                          value={sensorConfig?.ph9 ?? ""}
+                          onChange={(e) => {
+                            const newValue = parseFloat(e.target.value);
+                            setSensorConfig((prev) => prev ? { ...prev, ph9: newValue } : null);
+                          }}
+                          className='bg-white/80 border-white max-w-[174px] shadow-none text-sm pr-16'
+                        />
+                        <Button variant={"outline"} disabled className='absolute top-0 right-0'>V</Button>
+                      </div>
+                      <Button disabled={!isDebug || sensorConfig?.ph9 == null || loadingUpdate == "ph9"} onClick={() => sensorConfig?.ph9 !== undefined && handleSimpan("ph9", sensorConfig.ph9, true)}>
+                        {loadingUpdate == "ph9" &&
+                          <svg
+                            className="animate-spin h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                            ></path>
+                          </svg>
+                        }
+                        Simpan
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {/* BAGIKAN AKSES */}
