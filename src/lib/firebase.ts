@@ -708,6 +708,12 @@ export const removeDeviceFromUser = async (
       await updateDoc(deviceRef, {
         sharedWith: arrayRemove(currentUser.uid),
       });
+    } else {
+      // Jika owner, hapus beserta owner dan kosongkan sharedWith
+      await updateDoc(deviceRef, {
+        sharedWith: [],
+        owner: ""
+      });
     }
 
     return { success: true, message: "Device berhasil dihapus" };
@@ -762,51 +768,31 @@ export function LastUpdated({
   timestamp: Timestamp | { seconds: number; nanoseconds: number };
   deviceId: string;
 }) {
-  const [label, setLabel] = useState("");
+  if (!timestamp || !deviceId) return null;
 
-  useEffect(() => {
-    let timeObj: Date;
-    
-    if (typeof (timestamp as Timestamp).toDate === "function") {
-      timeObj = (timestamp as Timestamp).toDate();
-    } else {
-      // fallback manual jika bukan Timestamp instance
-      const { seconds, nanoseconds } = timestamp as { seconds: number; nanoseconds: number };
-      timeObj = new Date(seconds * 1000 + Math.floor(nanoseconds / 1e6));
-    }
+  let dateObj: Date;
+  if (typeof (timestamp as Timestamp).toDate === "function") {
+    dateObj = (timestamp as Timestamp).toDate();
+  } else {
+    const { seconds, nanoseconds } = timestamp as { seconds: number; nanoseconds: number };
+    dateObj = new Date(seconds * 1000 + Math.floor(nanoseconds / 1e6));
+  }
+  
+  // Update status perangkat
+  const now = dayjs();
+  const time = dayjs(dateObj);
+  const diffMinutes = now.diff(time, "minute");
+  const ref = doc(db, "devices", deviceId);
+  updateDoc(ref, {
+    status: diffMinutes <= 2,
+  }).catch((err) => {
+    console.error("Update failed:", err);
+  });
 
-    // console.log(timeObj);
-
-    const now = dayjs();
-    const time = dayjs(timeObj);
-    const diffMinutes = now.diff(time, "minute");
-    const diffHours = now.diff(time, "hour");
-    const diffDays = now.diff(time, "day");
-
-    if (diffDays >= 3) {
-      setLabel(time.format("D MMMM YYYY | HH:mm"));
-    } else if (diffDays >= 1) {
-      setLabel(`${diffDays} hari lalu`);
-    } else if (diffHours >= 1) {
-      setLabel(`${diffHours} jam lalu`);
-    } else {
-      setLabel(`${diffMinutes} menit lalu`);
-    }
-
-    if (diffMinutes >= 2) {
-      const ref = doc(db, "devices", deviceId);
-      updateDoc(ref, {
-        status: false,
-      }).then(() => {
-        console.log("Status updated to false due to inactivity");
-      }).catch((err) => {
-        console.error("Update failed:", err);
-      });
-    }
-  }, [timestamp, deviceId]);
-
-  return label;
+  const formatted = dayjs(dateObj).format("DD/MM/YYYY | HH:mm:ss");
+  return formatted;
 }
+
 
 export async function removeUserFromSharedWith(
   deviceId: string,

@@ -17,11 +17,10 @@ import { floorToOneDecimal } from "@/lib/utils";
 import AddDeviceDialog from "@/components/AddDeviceDialog";
 
 export default function DashboardPage() {
-  const { devices, loading } = useDevicesRealtime();
-  // const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const currentUser = auth.currentUser
-
+  const { devices, loading } = useDevicesRealtime();
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [selectedDeviceIndex, setSelectedDeviceIndex] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<"owned" | "shared">("owned");
 
   // Filter perangkat saat render
@@ -29,14 +28,67 @@ export default function DashboardPage() {
   const sharedDevices = devices.filter(device => currentUser?.uid !== undefined && device.sharedWith?.includes(currentUser.uid));
   const visibleDevices: Device[] = activeTab === "owned" ? ownedDevices : sharedDevices;
 
-  // Set selectedDevice saat tab atau devices berubah
   useEffect(() => {
-    if (visibleDevices.length > 0) {
+    // Cek jumlah device di masing-masing tab 
+    const ownedCount = ownedDevices.length;
+    const sharedCount = sharedDevices.length;
+    const exists = visibleDevices.some(d => d.id === selectedDevice?.id);
+
+    // Jika tab "owned" aktif dan tidak ada device, pindah ke "shared" jika ada device di sana
+    if (activeTab === "owned" && ownedCount === 0 && sharedCount > 0) {
+      setActiveTab("shared");
+      return;
+    }
+    // Jika tab "shared" aktif dan tidak ada device, pindah ke "owned" jika ada device di sana
+    if (activeTab === "shared" && sharedCount === 0 && ownedCount > 0) {
+      setActiveTab("owned");
+      return;
+    }
+    // Jika kedua tab kosong, setSelectedDevice(null)
+    if (ownedCount === 0 && sharedCount === 0) {
+      setSelectedDevice(null);
+      return;
+    }
+
+    // Pilih device pertama jika selectedDevice tidak ada
+    if (!selectedDevice && visibleDevices.length > 0) {
       setSelectedDevice(visibleDevices[0]);
-    } else {
+      setSelectedDeviceIndex(0);
+      // Pilih device pertama jika selectedDevice dihapus
+    } else if (!exists && visibleDevices.length > 0) {
+      setSelectedDevice(visibleDevices[0]);
+      setSelectedDeviceIndex(0);
+    } else if (visibleDevices.length === 0) {
       setSelectedDevice(null);
     }
-  }, [activeTab, devices, visibleDevices]);
+
+    if (selectedDevice != visibleDevices[selectedDeviceIndex]) {
+      setSelectedDevice(visibleDevices[selectedDeviceIndex]);
+    }
+
+    // console.log("visibleDevices");
+    // console.log(visibleDevices[0].latestReading?.TDS);
+    // console.log("selectedDevice");
+    // console.log(selectedDevice?.latestReading?.TDS);
+  }, [devices, activeTab, selectedDevice, visibleDevices, ownedDevices, sharedDevices, selectedDeviceIndex])
+
+  const handleClickDeviceNumber = (index: number) => {
+    setSelectedDeviceIndex(index);
+    setSelectedDevice(visibleDevices[index]);
+  };
+
+
+  // useEffect(() => {
+  //   if (!selectedDevice && visibleDevices.length > 0) {
+  //     setSelectedDevice(visibleDevices[0]);
+  //   }
+
+  //   const selectedStillVisible = visibleDevices.some(d => d.id === selectedDevice?.id);
+  //   if (!selectedStillVisible && visibleDevices.length > 0) {
+  //     setSelectedDevice(visibleDevices[0]);
+  //   }
+  // }, [devices, activeTab, selectedDevice?.id, visibleDevices, selectedDevice]);
+
 
 
   if (loading) {
@@ -48,10 +100,6 @@ export default function DashboardPage() {
       </main>
     );
   }
-
-  console.log("devices", devices);
-  console.log("visibleDevices", visibleDevices);
-
 
   return (
     <main className="min-h-screen bg-main py-8">
@@ -112,7 +160,7 @@ export default function DashboardPage() {
                       {visibleDevices?.map((device, index) => (
                         <Button
                           key={device.id}
-                          onClick={() => setSelectedDevice(device)}
+                          onClick={() => handleClickDeviceNumber(index)}
                           variant={selectedDevice?.id === device.id ? "dark" : "glass"}
                           className="size-12 rounded-full cursor-pointer transition-all"
                         >
@@ -166,32 +214,18 @@ export default function DashboardPage() {
                   <span className="text-xs text-center">Pemilik perangkat menonaktifkan fitur bagikan data.</span>
                 </div>
                 <div className={`${selectedDevice?.isShareable || selectedDevice?.owner == currentUser?.uid ? "flex" : "hidden"} justify-center items-center mb-8 text-muted-foreground mt-8 lg:mt-12`}>
-                  {selectedDevice?.status ?
-                    <div className="flex flex-col items-center border border-white/60 px-8 py-3 rounded-md bg-white/20">
-                      <span className="text-xs">Terakhir diperbarui:</span>
-                      <span className="text-sm font-semibold">
-                        <LastUpdated
-                          timestamp={selectedDevice?.latestReading?.timestamp ?? new Date(0) as unknown as import("firebase/firestore").Timestamp}
-                          deviceId={selectedDevice?.id || ""}
-                        />
-                      </span>
-                    </div>
-                    :
-                    <div className="flex flex-col items-center border border-white/60 px-8 py-3 rounded-md bg-white/20 text-slate-500">
-                      <span className="text-xs">Terakhir diperbarui:</span>
-                      <span className="text-sm font-semibold">
-                        <LastUpdated
-                          timestamp={selectedDevice?.latestReading?.timestamp ?? new Date(0) as unknown as import("firebase/firestore").Timestamp}
-                          // timestamp={selectedDevice?.latestReading?.timestamp}
-                          deviceId={selectedDevice?.id || ""}
-                        />
-                      </span>
-                      {/* <CircleAlert className="text-red-500 size-5 mb-1" /> */}
-                    </div>
-                  }
+                  <div className="flex flex-col items-center border border-white/60 px-8 py-3 rounded-md bg-white/20">
+                    <span className="text-xs">Terakhir diperbarui:</span>
+                    <span className="text-sm font-semibold">
+                      <LastUpdated
+                        timestamp={selectedDevice?.latestReading?.timestamp ?? new Date(0) as unknown as import("firebase/firestore").Timestamp}
+                        deviceId={selectedDevice?.id || ""}
+                      />
+                    </span>
+                  </div>
                 </div>
                 <div className={selectedDevice?.isShareable || selectedDevice?.owner == currentUser?.uid ? "block" : "hidden"}>
-                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 justify-center items-center">
+                  <div className={`grid grid-cols-1 lg:grid-cols-4 gap-4 justify-center items-center ${!selectedDevice?.status && "opacity-60"}`}>
                     <div className="relative flex flex-col items-center justify-center w-full grow bg-white/40 border border-white rounded-3xl pt-3 pb-4">
                       <div className="flex items-center gap-2 justify-start w-full px-4">
                         <div className="flexCenter p-1 rounded-md shadow-md shadow-emerald-400">
@@ -225,7 +259,7 @@ export default function DashboardPage() {
                         <p className="text-emerald-500 font-heading">pH</p>
                       </div>
                       <Gauge
-                        minValue={4}
+                        minValue={0}
                         value={floorToOneDecimal(selectedDevice?.latestReading?.water_pH || 0)}
                         maxValue={9}
                         ticks={[
@@ -254,16 +288,16 @@ export default function DashboardPage() {
                       <Gauge
                         minValue={14}
                         value={floorToOneDecimal(selectedDevice?.latestReading?.water_temp || 0)}
-                        maxValue={30}
+                        maxValue={35}
                         ticks={[
                           { value: 17 },
                           { value: 22 },
-                          { value: 30 }
+                          { value: 35 }
                         ]}
                         subArcs={[
                           { limit: 17 },
                           { limit: 22 },
-                          { limit: 30 }
+                          { limit: 35 }
                         ]}
                       />
                       <h5 className="-mt-6 text-foreground/80 text-2xl">°C</h5>
@@ -276,18 +310,18 @@ export default function DashboardPage() {
                         <p className="text-emerald-500 font-heading">Ketinggian Air</p>
                       </div>
                       <Gauge
-                        minValue={30}
+                        minValue={0}
                         value={Math.floor(selectedDevice?.latestReading?.water_level || 0)}
-                        maxValue={100}
+                        maxValue={50}
                         ticks={[
-                          { value: 40 },
-                          { value: 60 },
-                          { value: 100 }
+                          { value: 10 },
+                          { value: 20 },
+                          { value: 50 }
                         ]}
                         subArcs={[
-                          { limit: 40 },
-                          { limit: 60 },
-                          { limit: 100 }
+                          { limit: 10 },
+                          { limit: 20 },
+                          { limit: 50 }
                         ]}
                       />
                       <h5 className="-mt-6 text-foreground/80 text-2xl">cm</h5>
@@ -303,16 +337,16 @@ export default function DashboardPage() {
                         <Gauge
                           minValue={14}
                           value={selectedDevice?.latestReading?.air_temp || 0}
-                          maxValue={32}
+                          maxValue={35}
                           ticks={[
                             { value: 17 },
                             { value: 22 },
-                            { value: 32 }
+                            { value: 35 }
                           ]}
                           subArcs={[
                             { limit: 17 },
                             { limit: 22 },
-                            { limit: 32 }
+                            { limit: 35 }
                           ]}
                         />
                         <h5 className="-mt-6 text-foreground/80 text-2xl">°C</h5>

@@ -1,5 +1,5 @@
 "use client";
-import { CircleGauge, Settings2 } from "lucide-react";
+import { ChartColumn, CircleGauge, Settings2 } from "lucide-react";
 import { Button } from "./ui/button";
 import {
   Tooltip,
@@ -12,6 +12,7 @@ import Link from "next/link";
 export default function Sidebar() {
   const menuItems = [
     { href: "/", label: "Dashboard", urlPathname: "", icon: <CircleGauge className="size-5" /> },
+    { href: "/histori", label: "Histori", urlPathname: "histori", icon: <ChartColumn className="size-5" /> },
     // { href: "/notifikasi", label: "Notifikasi", urlPathname: "notifikasi", icon: <Bell className="size-5" /> },
     { href: "/pengaturan", label: "Pengaturan", urlPathname: "pengaturan", icon: <Settings2 className="size-5" /> },
   ];

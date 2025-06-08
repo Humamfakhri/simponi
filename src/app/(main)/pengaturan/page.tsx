@@ -59,13 +59,42 @@ export default function PengaturanPage() {
   //     setDeviceLocation(devices[0].location || "");
   //   }
   // }, [devices]);
+  // useEffect(() => {
+  //   if (visibleDevices.length > 0) {
+  //     setSelectedDevice(visibleDevices[0]);
+  //   } 
+  // }, [activeTab, devices, visibleDevices]);
+
   useEffect(() => {
-    if (visibleDevices.length > 0) {
+    // Cek jumlah device di masing-masing tab
+    const ownedCount = ownedDevices.length;
+    const sharedCount = sharedDevices.length;
+    const exists = visibleDevices.some(d => d.id === selectedDevice?.id);
+
+    // Jika tab "owned" aktif dan tidak ada device, pindah ke "shared" jika ada device di sana
+    if (activeTab === "owned" && ownedCount === 0 && sharedCount > 0) {
+      setActiveTab("shared");
+      return;
+    }
+    // Jika tab "shared" aktif dan tidak ada device, pindah ke "owned" jika ada device di sana
+    if (activeTab === "shared" && sharedCount === 0 && ownedCount > 0) {
+      setActiveTab("owned");
+      return;
+    }
+    // Jika kedua tab kosong, setSelectedDevice(null)
+    if (ownedCount === 0 && sharedCount === 0) {
+      setSelectedDevice(null);
+      return;
+    }
+    // Pilih device pertama jika selectedDevice tidak ada atau sudah tidak ada di visibleDevices
+    if (!selectedDevice && visibleDevices.length > 0) {
       setSelectedDevice(visibleDevices[0]);
-    } else {
+    } else if (!exists && visibleDevices.length > 0) {
+      setSelectedDevice(visibleDevices[0]);
+    } else if (visibleDevices.length === 0) {
       setSelectedDevice(null);
     }
-  }, [activeTab, devices, visibleDevices]);
+  }, [devices, activeTab, selectedDevice, visibleDevices, ownedDevices, sharedDevices]);
 
   useEffect(() => {
     if (selectedDevice) {
@@ -186,20 +215,24 @@ export default function PengaturanPage() {
           <div className="grow flex flex-col gap-4 px-2">
             <div className="flex items-center gap-4">
               <div className="flex gap-2 mb-4">
-                <Button
-                  variant={activeTab === "owned" ? "dark" : "glass"}
-                  className="rounded-full"
-                  onClick={() => setActiveTab("owned")}
-                >
-                  Perangkat Anda
-                </Button>
-                <Button
-                  variant={activeTab === "shared" ? "dark" : "glass"}
-                  className="rounded-full"
-                  onClick={() => setActiveTab("shared")}
-                >
-                  Dibagikan
-                </Button>
+                {ownedDevices.length > 0 &&
+                  <Button
+                    variant={activeTab === "owned" ? "dark" : "glass"}
+                    className="rounded-full"
+                    onClick={() => setActiveTab("owned")}
+                  >
+                    Perangkat Anda
+                  </Button>
+                }
+                {sharedDevices.length > 0 &&
+                  <Button
+                    variant={activeTab === "shared" ? "dark" : "glass"}
+                    className="rounded-full"
+                    onClick={() => setActiveTab("shared")}
+                  >
+                    Dibagikan
+                  </Button>
+                }
               </div>
             </div>
             <div className="glass-container">
