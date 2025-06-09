@@ -17,7 +17,7 @@ interface GaugeProps {
 
 const Gauge: React.FC<GaugeProps> = ({ value, ticks, minValue, maxValue, subArcs }: GaugeProps) => {
   return (
-    <div className="w-full h-auto -mt-2">
+    <div className="w-full max-w-[275px] h-auto -mt-2">
     {/* <div className="w-full h-auto -mt-2"> */}
       <GaugeComponent
         type="semicircle"

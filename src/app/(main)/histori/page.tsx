@@ -1,65 +1,119 @@
 "use client";
 
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
-import React from "react";
-import Sidebar from "@/components/Sidebar";
-
-// Data dummy
-const sampleData = [
-  { time: "08:00", value: 10 },
-  { time: "09:00", value: 15 },
-  { time: "10:00", value: 12 },
-  { time: "11:00", value: 20 },
-  { time: "12:00", value: 17 },
-];
-
-// Konfigurasi 6 sensor
-const sensors = [
-  { name: "pH Air", color: "#8884d8" },
-  { name: "TDS", color: "#82ca9d" },
-  { name: "Suhu Air", color: "#ffc658" },
-  { name: "Suhu Udara", color: "#ff7300" },
-  { name: "Kelembapan Udara", color: "#00c49f" },
-  { name: "Ketinggian Air", color: "#0088fe" },
-];
+import LineChartWithXAxisPadding from "@/components/LineChartWithXAxisPadding";
+import { SensorChartCard } from "@/components/SensorChartCard";
+import Tab from "@/components/Tab";
+import { useDevicesRealtime } from "@/hooks/useDevicesRealtime";
+import { auth } from "@/lib/firebase";
+import { Device } from "@/model/Device";
+import { useEffect, useState } from "react";
 
 export default function HistoriPage() {
+  const currentUser = auth.currentUser
+  const { devices, loading } = useDevicesRealtime();
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
+  const [selectedDeviceIndex, setSelectedDeviceIndex] = useState<number>(0);
+  const [activeTab, setActiveTab] = useState<"owned" | "shared">("owned");
+
+  // Filter perangkat saat render
+  const ownedDevices = devices.filter(device => device.owner === currentUser?.uid);
+  const sharedDevices = devices.filter(device => currentUser?.uid !== undefined && device.sharedWith?.includes(currentUser.uid));
+  const visibleDevices: Device[] = activeTab === "owned" ? ownedDevices : sharedDevices;
+
+  useEffect(() => {
+    // Cek jumlah device di masing-masing tab 
+    const ownedCount = ownedDevices.length;
+    const sharedCount = sharedDevices.length;
+    const exists = visibleDevices.some(d => d.id === selectedDevice?.id);
+
+    // Jika tab "owned" aktif dan tidak ada device, pindah ke "shared" jika ada device di sana
+    if (activeTab === "owned" && ownedCount === 0 && sharedCount > 0) {
+      setActiveTab("shared");
+      return;
+    }
+    // Jika tab "shared" aktif dan tidak ada device, pindah ke "owned" jika ada device di sana
+    if (activeTab === "shared" && sharedCount === 0 && ownedCount > 0) {
+      setActiveTab("owned");
+      return;
+    }
+    // Jika kedua tab kosong, setSelectedDevice(null)
+    if (ownedCount === 0 && sharedCount === 0) {
+      setSelectedDevice(null);
+      return;
+    }
+
+    // Pilih device pertama jika selectedDevice tidak ada
+    if (!selectedDevice && visibleDevices.length > 0) {
+      setSelectedDevice(visibleDevices[0]);
+      setSelectedDeviceIndex(0);
+      // Pilih device pertama jika selectedDevice dihapus
+    } else if (!exists && visibleDevices.length > 0) {
+      setSelectedDevice(visibleDevices[0]);
+      setSelectedDeviceIndex(0);
+    } else if (visibleDevices.length === 0) {
+      setSelectedDevice(null);
+    }
+
+    if (selectedDevice != visibleDevices[selectedDeviceIndex]) {
+      setSelectedDevice(visibleDevices[selectedDeviceIndex]);
+    }
+  }, [devices, activeTab, selectedDevice, visibleDevices, ownedDevices, sharedDevices, selectedDeviceIndex])
+
+  const handleClickDeviceNumber = (index: number) => {
+    setSelectedDeviceIndex(index);
+    setSelectedDevice(visibleDevices[index]);
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-emerald-400"></div>
+      </div>
+    );
+  }
+
   return (
-    <main className="min-h-screen bg-main py-8">
-      <div className="container mx-auto mt-20 lg:mt-24 lg:mb-8">
-        <div className="flex flex-col lg:flex-row items-start gap-8 w-full">
-          <Sidebar />
-          <div className="grow w-full lg:w-fit px-2 lg:px-0">
-            <h1 className="text-2xl font-bold mb-8 text-center text-gray-900 dark:text-white">Histori Sensor</h1>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {sensors.map((sensor) => (
-                <div key={sensor.name} className="bg-white dark:bg-zinc-900 rounded-xl p-4 shadow-md">
-                  <h2 className="text-lg font-semibold mb-2 text-gray-700 dark:text-white">{sensor.name}</h2>
-                  <ResponsiveContainer width="100%" height={200}>
-                    <LineChart data={sampleData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="time" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Line type="monotone" dataKey="value" stroke={sensor.color} strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              ))}
-            </div>
+    <>
+      <Tab ownedDevices={ownedDevices} sharedDevices={sharedDevices} activeTab={activeTab} setActiveTab={setActiveTab} />
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white/60 pr-8 py-4 border border-white rounded-2xl">
+          <div className="flex flex-col gap-1 mb-6">
+            <h1 className="px-5 font-bold">TDS <span className="text-muted-foreground font-normal text-sm">(PPM)</span></h1>
+            <p className="px-5 text-muted-foreground text-sm">Total Dissolved Solids</p>
+          </div>
+          <div>
+            <LineChartWithXAxisPadding />
+          </div>
+        </div>
+        <div className="bg-white/60 pr-8 py-4 border border-white rounded-2xl">
+          <div className="flex flex-col gap-1 mb-6">
+            <h1 className="px-5 font-bold">pH</h1>
+            <p className="px-5 text-muted-foreground text-sm">pH Air</p>
+          </div>
+          <div>
+            <LineChartWithXAxisPadding />
+          </div>
+        </div>
+        <div className="bg-white/60 pr-8 py-4 border border-white rounded-2xl">
+          <div className="mb-6">
+            <h1 className="px-5 font-bold">TDS</h1>
+            <p className="px-5 text-muted-foreground text-sm">Total Dissolve Solid</p>
+          </div>
+          <div className="grid grid-cols-4">
+            <SensorChartCard
+              title="Average TDS"
+              average={753.42}
+              data={[
+                { timestamp: "2025-06-09T05:00:00Z", value: 700 },
+                { timestamp: "2025-06-09T05:05:00Z", value: 710 },
+                { timestamp: "2025-06-09T05:10:00Z", value: 770 },
+
+              ]}
+            />
+
           </div>
         </div>
       </div>
-    </main>
+    </>
   );
 }

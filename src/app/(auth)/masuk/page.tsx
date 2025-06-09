@@ -66,7 +66,7 @@ export default function MasukPage() {
               e.preventDefault(); // mencegah reload halaman
               handleMasuk(email, password);
             }}
-            className="text-center flex flex-col gap-4 border border-white bg-white/50 backdrop-blur-md px-6 py-8 lg:p-12 rounded-3xl z-10 w-full lg:min-w-md"
+            className="text-center flex flex-col gap-4 border border-white bg-white/60 backdrop-blur-md px-6 py-8 lg:p-12 rounded-3xl z-10 w-full lg:min-w-md"
           >
             <div className="header text-center mb-10">
               <div className="flex flex-col items-center justify-center">

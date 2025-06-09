@@ -23,6 +23,7 @@ interface Readings {
   water_level: number;
   air_temp: number;
   air_humidity: number;
+  ldr: number;
   timestamp: Timestamp;
 }
 
